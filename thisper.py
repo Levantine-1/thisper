@@ -24,4 +24,4 @@ def make_request():
 
 if __name__ == '__main__':
     app.logger.setLevel(logging.INFO)
-    app.run()
+    app.run(port=5001)
