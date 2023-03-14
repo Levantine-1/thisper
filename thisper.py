@@ -1,9 +1,7 @@
 from flask import Flask, request
 import requests
 import logging
-import os
 
-# jenkins_server = os.getenv("JENKINS_SERVER")
 jenkins_server = "jenkins.levantine.io"
 
 app = Flask(__name__)
