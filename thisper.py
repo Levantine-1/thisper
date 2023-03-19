@@ -15,7 +15,8 @@ def default_response():
 
 @app.route('/.well-known/acme-challenge/<token>', methods=['GET'])
 def acme_challenge(token):
-    return "ACME challenge response"
+    app.logger.info("ACME Challenge accepted: " + token)
+    return token
 
 
 @app.route('/build', methods=['POST'])
