@@ -13,6 +13,11 @@ def default_response():
     return response
 
 
+@app.route('/.well-known/acme-challenge/<token>', methods=['GET'])
+def acme_challenge(token):
+    return "ACME challenge response"
+
+
 @app.route('/build', methods=['POST'])
 def make_request():
     job = request.form['job_id'].strip()  # Get data from request
