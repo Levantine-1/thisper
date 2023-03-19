@@ -7,6 +7,12 @@ jenkins_server = "jenkins.levantine.io"
 app = Flask(__name__)
 
 
+@app.route('/', methods=['GET'])
+def default_response():
+    response = "Hello I'm alive! Please make requests to /build"
+    return response
+
+
 @app.route('/build', methods=['POST'])
 def make_request():
     job = request.form['job_id'].strip()  # Get data from request
