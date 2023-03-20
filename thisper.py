@@ -36,4 +36,5 @@ def make_request():
 
 if __name__ == '__main__':
     app.logger.setLevel(logging.INFO)
+    app.config["SERVER_NAME"] = "thisper.levantine.io" # https://stackoverflow.com/questions/70542150/nginx-container-as-a-proxy-to-flask-app-container-problem-with-domain-and-flas
     app.run(host='0.0.0.0', port=5000)
