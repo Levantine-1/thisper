@@ -1,10 +1,13 @@
-version: '3.4'
+version: "3.8"
 
 services:
-  thisper:
-    image: thisper
-    build:
-      context: .
-      dockerfile: ./Dockerfile
-    ports:
-      - 5000:5000
+  flask-app:
+    build: .
+    image: flask-app
+    container_name: flask-app
+    expose:
+      - 5000
+    environment:
+      VIRTUAL_HOST: thisper.levantine.io
+      LETSENCRYPT_HOST: thisper.levantine.io
+      LETSENCRYPT_EMAIL: letsencrypt@levantine.io
