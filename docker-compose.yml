@@ -7,7 +7,3 @@ services:
     container_name: flask-app
     expose:
       - 5000
-    environment:
-      VIRTUAL_HOST: thisper.levantine.io
-      LETSENCRYPT_HOST: thisper.levantine.io
-      LETSENCRYPT_EMAIL: letsencrypt@levantine.io
