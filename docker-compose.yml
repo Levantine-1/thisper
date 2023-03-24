@@ -2,8 +2,12 @@ version: "3.8"
 
 services:
   flask-app:
-    build: .
     image: flask-app
+    build: .
+      context: .
+      dockerfile: ./Dockerfile
     container_name: flask-app
     expose:
       - 5000
+    ports:
+      - "5000:5000"
