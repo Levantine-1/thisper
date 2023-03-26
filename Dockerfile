@@ -17,4 +17,5 @@ COPY . .
 EXPOSE 5000
 
 # Run the command to start the app
-CMD ["python", "thisper.py"]
+# CMD ["python", "thisper.py"]
+CMD ["gunicorn", "thisper:app", "-b", "0.0.0.0:5000"]
