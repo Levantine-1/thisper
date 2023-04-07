@@ -7,6 +7,21 @@ jenkins_server = "jenkins.levantine.io"
 app = Flask(__name__)
 
 
+def check_jenkins_host_entry():
+    hostname = jenkins_server
+    ip_address = "192.168.1.4"
+
+    with open('/etc/hosts', 'r') as f:
+        lines = f.readlines()
+
+    if any(jenkins_server in line for line in lines):
+        app.logger.info("No modifications to host file needed at this time.")
+    else:
+        with open('/etc/hosts', 'a') as f:
+            f.write(f"{ip_address} {hostname}\n")
+            app.logger.info("Jenkins host entry added to hosts file")
+
+
 @app.route('/', methods=['GET'])
 def default_response():
     response = "Hello I'm alive! Please make requests to /build"
@@ -39,5 +54,6 @@ def make_request():
 
 if __name__ == '__main__':
     app.logger.setLevel(logging.INFO)
+    check_jenkins_host_entry()
     # app.config["SERVER_NAME"] = "thisper.levantine.io" # https://stackoverflow.com/questions/70542150/nginx-container-as-a-proxy-to-flask-app-container-problem-with-domain-and-flas
     app.run(host="0.0.0.0", port=5000)
