@@ -3,7 +3,6 @@ import requests
 import logging
 
 jenkins_server = "jenkins.levantine.io"
-
 app = Flask(__name__)
 
 
@@ -48,12 +47,17 @@ def make_request():
 
     url = "http://" + "github_actions_bmt:" + auth_key + "@" + jenkins_server + "/job/" + job + "/build"
     app.logger.info(url)
-    response = requests.post(url)
+
+    try:
+        response = requests.post(url)
+    except requests.exceptions.ConnectionError:
+        app.logger.warning("Jenkins host may not have been configured")
+        check_jenkins_host_entry()
+        response = requests.post(url)
     return response.text
 
 
 if __name__ == '__main__':
     app.logger.setLevel(logging.INFO)
-    check_jenkins_host_entry()
     # app.config["SERVER_NAME"] = "thisper.levantine.io" # https://stackoverflow.com/questions/70542150/nginx-container-as-a-proxy-to-flask-app-container-problem-with-domain-and-flas
     app.run(host="0.0.0.0", port=5000)
