@@ -19,6 +19,9 @@ def acme_challenge(token):
     return token
 
 
+# Pass in the following parameters:
+#   <job_id> = name of jenkins job
+#   <auth_key> = Jenkins api authorization key
 @app.route('/build', methods=['POST'])
 def make_request():
     job = request.form['job_id'].strip()  # Get data from request
