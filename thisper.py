@@ -38,8 +38,9 @@ def acme_challenge(token):
 #   <auth_key> = Jenkins api authorization key
 @app.route('/build', methods=['POST'])
 def make_request():
-    job = request.form['job_id'].strip()  # Get data from request
-    auth_key = request.form['auth_key'].strip()
+    data = request.get_json()
+    job = data['job_id'].strip()  # Get data from request
+    auth_key = data['auth_key'].strip()
 
     # Sanitize Inputs
     job = job.replace('/', '')
