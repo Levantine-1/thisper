@@ -39,7 +39,7 @@ jobs:
      - name: Deploy Container
        uses: fjogeleit/http-request-action@v1
        with:
-         url: 'https://thisper.levantine.io/build'
-         method: 'POST'
+         url: 'https://thisper.levantine.io/'
+         method: 'GET'
          customHeaders: '{"Content-Type": "application/json"}'
          data: '{"job_id": "test_job", "auth_key": "${{ secrets.JENKINS_AUTH_KEY }}"}'
