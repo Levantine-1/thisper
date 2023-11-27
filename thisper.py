@@ -7,8 +7,9 @@ app = Flask(__name__)
 
 
 def check_jenkins_host_entry():
+    # 2023-11-26 Pending Deprecation if PF Sense DNS resolver works
     hostname = jenkins_server
-    ip_address = "192.168.1.4"
+    ip_address = "192.168.1.20"
 
     with open('/etc/hosts', 'r') as f:
         lines = f.readlines()
@@ -41,20 +42,23 @@ def make_request():
     data = request.get_json()
     job = data['job_id'].strip()  # Get data from request
     auth_key = data['auth_key'].strip()
+    auth_usr = data['auth_usr'].strip()
 
     # Sanitize Inputs
     job = job.replace('/', '')
     auth_key = auth_key.replace('/', '')  # No slashes as it's passed in as an url parameter so at risk for url hijack
 
-    url = "http://" + "github_actions_bmt:" + auth_key + "@" + jenkins_server + "/job/" + job + "/build"
+    url = "http://" + auth_usr + ":" + auth_key + "@" + jenkins_server + "/job/" + job + "/build"
     app.logger.info(url)
 
     try:
         response = requests.post(url)
     except requests.exceptions.ConnectionError:
-        app.logger.warning("Jenkins host may not have been configured")
-        check_jenkins_host_entry()
-        response = requests.post(url)
+        warning_msg = "Jenkins host may not have been configured correctly"
+        app.logger.warning(warning_msg)
+        # check_jenkins_host_entry()
+        # response = requests.post(url)
+        response = warning_msg
     return response.text
 
 
