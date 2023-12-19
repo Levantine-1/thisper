@@ -10,28 +10,24 @@ app = Flask(__name__)
 
 def test_connection(host):
     try:
-        # 1. Resolve URL to an IP
+        # Resolve URL to an IP
         ip_address = socket.gethostbyname(host)
         app.logger.warning(f"1. URL resolved to IP: {ip_address}")
 
-        # 2. Determine DNS server
+        # Determine DNS server
         dns_server = socket.gethostbyaddr(ip_address)[0]
         app.logger.warning(f"2. DNS server: {dns_server}")
 
-        # 3. Ping the host
+        # Ping the host
         ping_result = subprocess.run(["ping", "-c", "4", host], capture_output=True)
         app.logger.warning(f"3. Ping Result:\n{ping_result.stdout.decode()}")
 
-        # 4. Curl the host and get return code
+        # Curl the host and get return code
         try:
             response = requests.get(f"http://{host}", timeout=5)
             app.logger.warning(f"4. Curl Return Code: {response.status_code}")
         except requests.exceptions.RequestException as e:
             app.logger.warning(f"4. Curl Error: {e}")
-
-        # 5. Print network configuration (Linux only)
-        network_config_result = subprocess.run(["ifconfig"], capture_output=True, text=True)
-        app.logger.warning(f"5. Network Configuration:\n{network_config_result.stdout}")
 
     except socket.gaierror:
         app.logger.error("Error: Unable to resolve the URL to an IP address.")
