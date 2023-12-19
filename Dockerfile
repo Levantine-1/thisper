@@ -10,7 +10,6 @@ RUN apt-get update && \
     dnsutils \
     vim \
     traceroute \
-    \
     && rm -rf /var/lib/apt/lists/*
 
 # Set the working directory to /app
