@@ -1,9 +1,43 @@
 from flask import Flask, request
 import requests
 import logging
+import socket
+import subprocess
 
 jenkins_server = "jenkins.internal.levantine.io"
 app = Flask(__name__)
+
+
+def test_connection(host):
+    try:
+        # 1. Resolve URL to an IP
+        ip_address = socket.gethostbyname(host)
+        app.logger.warning(f"1. URL resolved to IP: {ip_address}")
+
+        # 2. Determine DNS server
+        dns_server = socket.gethostbyaddr(ip_address)[0]
+        app.logger.warning(f"2. DNS server: {dns_server}")
+
+        # 3. Ping the host
+        ping_result = subprocess.run(["ping", "-c", "4", host], capture_output=True)
+        app.logger.warning(f"3. Ping Result:\n{ping_result.stdout.decode()}")
+
+        # 4. Curl the host and get return code
+        try:
+            response = requests.get(f"http://{host}", timeout=5)
+            app.logger.warning(f"4. Curl Return Code: {response.status_code}")
+        except requests.exceptions.RequestException as e:
+            app.logger.warning(f"4. Curl Error: {e}")
+
+        # 5. Print network configuration (Linux only)
+        network_config_result = subprocess.run(["ifconfig"], capture_output=True, text=True)
+        app.logger.warning(f"5. Network Configuration:\n{network_config_result.stdout}")
+
+    except socket.gaierror:
+        app.logger.error("Error: Unable to resolve the URL to an IP address.")
+    except Exception as e:
+        app.logger.error(f"An error occurred: {e}")
+
 
 @app.route('/', methods=['GET'])
 def default_response():
@@ -39,14 +73,12 @@ def make_request():
         response = requests.post(url)
     except requests.exceptions.ConnectionError:
         warning_msg = "Jenkins host may not have been configured correctly"
+        test_connection(host=jenkins_server)
         app.logger.warning(warning_msg)
-        # check_jenkins_host_entry()
-        # response = requests.post(url)
         response = warning_msg
     return response.text if hasattr(response, 'text') else response
 
 
 if __name__ == '__main__':
     app.logger.setLevel(logging.INFO)
-    # app.config["SERVER_NAME"] = "thisper.levantine.io" # https://stackoverflow.com/questions/70542150/nginx-container-as-a-proxy-to-flask-app-container-problem-with-domain-and-flas
     app.run(host="0.0.0.0", port=5000)
