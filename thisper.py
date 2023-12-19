@@ -2,25 +2,8 @@ from flask import Flask, request
 import requests
 import logging
 
-jenkins_server = "jenkins.levantine.io"
+jenkins_server = "jenkins.internal.levantine.io"
 app = Flask(__name__)
-
-
-def check_jenkins_host_entry():
-    # 2023-11-26 Pending Deprecation if PF Sense DNS resolver works
-    hostname = jenkins_server
-    ip_address = "192.168.1.20"
-
-    with open('/etc/hosts', 'r') as f:
-        lines = f.readlines()
-
-    if any(jenkins_server in line for line in lines):
-        app.logger.info("No modifications to host file needed at this time.")
-    else:
-        with open('/etc/hosts', 'a') as f:
-            f.write(f"{ip_address} {hostname}\n")
-            app.logger.info("Jenkins host entry added to hosts file")
-
 
 @app.route('/', methods=['GET'])
 def default_response():
@@ -39,6 +22,7 @@ def acme_challenge(token):
 #   <auth_key> = Jenkins api authorization key
 @app.route('/build', methods=['POST'])
 def make_request():
+    response = None
     data = request.get_json()
     job = data['job_id'].strip()  # Get data from request
     auth_key = data['auth_key'].strip()
@@ -59,7 +43,7 @@ def make_request():
         # check_jenkins_host_entry()
         # response = requests.post(url)
         response = warning_msg
-    return response.text
+    return response.text if hasattr(response, 'text') else response
 
 
 if __name__ == '__main__':
