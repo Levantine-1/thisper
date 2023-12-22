@@ -59,8 +59,9 @@ def make_request():
     services = data['services'].strip()
 
     # Sanitize Inputs
-    job = job.replace('/', '')
-    auth_key = auth_key.replace('/', '')  # No slashes as it's passed in as an url parameter so at risk for url hijack
+    job = job.replace('/', '') # No slashes as it's passed in as an url parameter so at risk for url hijack
+    auth_key = auth_key.replace('/', '')
+    services = services.replace('/', '')
 
     url = "http://" + auth_usr + ":" + auth_key + "@" + jenkins_server + "/job/" + job + "/buildWithParameters?services=" + services
     app.logger.info(url)
