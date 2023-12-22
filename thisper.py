@@ -60,6 +60,7 @@ def make_request():
 
     # Sanitize Inputs
     job = job.replace('/', '') # No slashes as it's passed in as an url parameter so at risk for url hijack
+    auth_usr = auth_usr.replace('/', '')
     auth_key = auth_key.replace('/', '')
     services = services.replace('/', '')
 
