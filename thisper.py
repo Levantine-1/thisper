@@ -37,7 +37,7 @@ def test_connection(host):
 
 @app.route('/', methods=['GET'])
 def default_response():
-    response = "Hello I'm alive! Please make requests to /build"
+    response = "There will be a health check soon, for now just send things to /build"
     return response
 
 
