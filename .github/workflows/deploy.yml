@@ -42,4 +42,4 @@ jobs:
          url: 'https://thisper.levantine.io/build'
          method: 'POST'
          customHeaders: '{"Content-Type": "application/json"}'
-         data: '{"job_id": "deploy_thisper", "auth_key": "${{ secrets.JENKINS_AUTH_KEY }}"}'
+         data: '{"job_id": "DeployContainer", "auth_key": "${{ secrets.JENKINS_AUTH_KEY }}", "services": "thisper"}'

@@ -52,17 +52,17 @@ def acme_challenge(token):
 #   <auth_key> = Jenkins api authorization key
 @app.route('/build', methods=['POST'])
 def make_request():
-    response = None
     data = request.get_json()
     job = data['job_id'].strip()  # Get data from request
     auth_key = data['auth_key'].strip()
     auth_usr = data['auth_usr'].strip()
+    services = data['services'].strip()
 
     # Sanitize Inputs
     job = job.replace('/', '')
     auth_key = auth_key.replace('/', '')  # No slashes as it's passed in as an url parameter so at risk for url hijack
 
-    url = "http://" + auth_usr + ":" + auth_key + "@" + jenkins_server + "/job/" + job + "/build"
+    url = "http://" + auth_usr + ":" + auth_key + "@" + jenkins_server + "/job/" + job + "/buildWithParameters?services=" + services
     app.logger.info(url)
 
     try:

@@ -1,17 +1,6 @@
 # Use an official Python runtime as a parent image
 FROM python:3.9-slim-buster
 
-# Install debugging tools
-RUN apt-get update && \
-    apt-get install -y \
-    iputils-ping \
-    net-tools \
-    curl \
-    dnsutils \
-    vim \
-    traceroute \
-    && rm -rf /var/lib/apt/lists/*
-
 # Set the working directory to /app
 WORKDIR /app
 
