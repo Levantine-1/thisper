@@ -12,27 +12,33 @@ def test_connection(host):
     try:
         # Resolve URL to an IP
         ip_address = socket.gethostbyname(host)
-        app.logger.warning(f"1. URL resolved to IP: {ip_address}")
+        app.logger.info(f"1. URL resolved to IP: {ip_address}")
 
         # Determine DNS server
         dns_server = socket.gethostbyaddr(ip_address)[0]
-        app.logger.warning(f"2. DNS server: {dns_server}")
+        app.logger.info(f"2. DNS server: {dns_server}")
 
         # Ping the host
         ping_result = subprocess.run(["ping", "-c", "4", host], capture_output=True)
-        app.logger.warning(f"3. Ping Result:\n{ping_result.stdout.decode()}")
+        app.logger.info(f"3. Ping Result:\n{ping_result.stdout.decode()}")
 
         # Curl the host and get return code
         try:
             response = requests.get(f"http://{host}", timeout=5)
-            app.logger.warning(f"4. Curl Return Code: {response.status_code}")
+            app.logger.info(f"4. Curl Return Code: {response.status_code}")
         except requests.exceptions.RequestException as e:
-            app.logger.warning(f"4. Curl Error: {e}")
+            app.logger.info(f"4. Curl Error: {e}")
 
     except socket.gaierror:
         app.logger.error("Error: Unable to resolve the URL to an IP address.")
     except Exception as e:
         app.logger.error(f"An error occurred: {e}")
+
+
+@app.before_first_request
+def startup_code():
+    app.logger.setLevel(logging.INFO)
+    test_connection(host=jenkins_server)
 
 
 @app.route('/', methods=['GET'])
@@ -59,13 +65,13 @@ def make_request():
     services = data['services'].strip()
 
     # Sanitize Inputs
-    job = job.replace('/', '') # No slashes as it's passed in as an url parameter so at risk for url hijack
+    job = job.replace('/', '')  # No slashes as it's passed in as an url parameter so at risk for url hijack
     auth_usr = auth_usr.replace('/', '')
     auth_key = auth_key.replace('/', '')
     services = services.replace('/', '')
 
     url = "http://" + auth_usr + ":" + auth_key + "@" + jenkins_server + "/job/" + job + "/buildWithParameters?services=" + services
-    app.logger.info(url)
+    app.logger.info(url.replace(auth_key, '<REDACTED>'))
 
     try:
         response = requests.post(url)
@@ -77,6 +83,7 @@ def make_request():
     return response.text if hasattr(response, 'text') else response
 
 
-if __name__ == '__main__':
+if __name__ == '__main__':  # These steps will only run if the app is started manually like "/bin/python thisper.py"
+    # Anything defined here will be ignored by gunicorn
     app.logger.setLevel(logging.INFO)
     app.run(host="0.0.0.0", port=5000)
