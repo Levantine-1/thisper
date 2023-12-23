@@ -50,7 +50,7 @@ def make_request():
         warning_msg = "Jenkins host may not have been configured correctly"
         app.logger.warning(warning_msg)
         response = warning_msg
-    return response.status_code if hasattr(response, 'status_code') else response
+    return response.text if hasattr(response, 'text') else response
 
 
 if __name__ == '__main__':  # These steps will only run if the app is started manually like "/bin/python thisper.py"
