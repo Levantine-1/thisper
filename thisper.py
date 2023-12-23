@@ -35,6 +35,10 @@ def make_request():
     auth_usr = data['auth_usr'].strip()
     services = data['services'].strip()
 
+    if len(auth_key) < 34:
+        app.logger.warning("Invalid Auth Key")
+        auth_key = "Invalid_Key"
+
     # Sanitize Inputs
     job = job.replace('/', '')  # No slashes as it's passed in as an url parameter so at risk for url hijack
     auth_usr = auth_usr.replace('/', '')
