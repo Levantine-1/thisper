@@ -7,38 +7,9 @@ import subprocess
 jenkins_server = "jenkins.internal.levantine.io"
 app = Flask(__name__)
 
-
-def test_connection(host):
-    try:
-        # Resolve URL to an IP
-        ip_address = socket.gethostbyname(host)
-        app.logger.info(f"1. URL resolved to IP: {ip_address}")
-
-        # Determine DNS server
-        dns_server = socket.gethostbyaddr(ip_address)[0]
-        app.logger.info(f"2. DNS server: {dns_server}")
-
-        # Ping the host
-        ping_result = subprocess.run(["ping", "-c", "4", host], capture_output=True)
-        app.logger.info(f"3. Ping Result:\n{ping_result.stdout.decode()}")
-
-        # Curl the host and get return code
-        try:
-            response = requests.get(f"http://{host}", timeout=5)
-            app.logger.info(f"4. Curl Return Code: {response.status_code}")
-        except requests.exceptions.RequestException as e:
-            app.logger.info(f"4. Curl Error: {e}")
-
-    except socket.gaierror:
-        app.logger.error("Error: Unable to resolve the URL to an IP address.")
-    except Exception as e:
-        app.logger.error(f"An error occurred: {e}")
-
-
 @app.before_first_request
 def startup_code():
     app.logger.setLevel(logging.INFO)
-    test_connection(host=jenkins_server)
 
 
 @app.route('/', methods=['GET'])
@@ -77,10 +48,9 @@ def make_request():
         response = requests.post(url)
     except requests.exceptions.ConnectionError:
         warning_msg = "Jenkins host may not have been configured correctly"
-        test_connection(host=jenkins_server)
         app.logger.warning(warning_msg)
         response = warning_msg
-    return response.text if hasattr(response, 'text') else response
+    return response.status_code if hasattr(response, 'status_code') else response
 
 
 if __name__ == '__main__':  # These steps will only run if the app is started manually like "/bin/python thisper.py"
