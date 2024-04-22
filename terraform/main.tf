@@ -18,7 +18,7 @@ provider "vault" {
 }
 
 data "vault_generic_secret" "aws_creds" {
-  path = "kv/aws/iam_access_keys/terraform_admin"
+  path = "kv/aws/iam_access_keys/terraform_thisper"
 }
 
 provider "aws" {
