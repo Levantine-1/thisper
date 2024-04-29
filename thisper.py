@@ -14,7 +14,7 @@ def startup_code():
 
 @app.route('/', methods=['GET'])
 def default_response():
-    response = "There will be a health check soon, for now just send things to /build"
+    response = "Kawaiii Inu"
     return response
 
 
