@@ -21,7 +21,7 @@ jobs:
        with:
          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY }}
          aws-secret-access-key: ${{ secrets.AWS_SECRET_KEY }}
-         aws-region: us-west-2
+         aws-region: us-west-1
 
      - name: Login to Amazon ECR
        id: login-ecr
@@ -36,10 +36,10 @@ jobs:
          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
 
-#     - name: Deploy Container
-#       uses: fjogeleit/http-request-action@v1
-#       with:
-#         url: 'https://thisper.levantine.io/build'
-#         method: 'POST'
-#         customHeaders: '{"Content-Type": "application/json"}'
-#         data: '{"job_id": "DeployContainer", "auth_usr": "github_actions", "auth_key": "${{ secrets.JENKINS_AUTH_KEY }}", "services": "thisper"}'
+     - name: Deploy Container
+       uses: fjogeleit/http-request-action@v1
+       with:
+         url: 'https://thisper.levantine.io/build'
+         method: 'POST'
+         customHeaders: '{"Content-Type": "application/json"}'
+         data: '{"job_id": "DeployContainer", "auth_usr": "github", "auth_key": "${{ secrets.JENKINS_AUTH_KEY }}", "services": "thisper"}'
