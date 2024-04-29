@@ -14,7 +14,7 @@ def startup_code():
 
 @app.route('/', methods=['GET'])
 def default_response():
-    response = "Kawaiii Inu"
+    response = "Hello and welcome! Please use the /build endpoint to trigger a Jenkins job."
     return response
 
 
