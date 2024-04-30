@@ -115,7 +115,11 @@ def deploy_container():
     auth_usr, auth_key, services = sanitize_inputs(data)
     url = "http://" + auth_usr + ":" + auth_key + "@" + jenkins_server + "/job/DeployContainer/buildWithParameters?services=" + services
     app.logger.info(url.replace(auth_key, '<REDACTED>'))
-    response = run_jenkins_job(url)
+    if services == "thisper":
+        requests.post(url)
+        response = "Deploying thisper requires thisper to restart so there will be no console output for this specifc service.", 200
+    else:
+        response = run_jenkins_job(url)
     return response
 
 @app.route('/run_terraform', methods=['POST'])
