@@ -43,6 +43,10 @@ def run_jenkins_job(url):
 
 
 def wait_for_jenkins_job(url):
+    time.sleep(10)  # Jenkins takes a few seconds to start the job and while a race condition is possible, it's not likely.
+    # But since I don't anticipate a high volume of requests, I'm not going to worry about it for now,
+    # and keep it stupid simple with a sleep timer
+
     pattern = r'(.*?)/buildWithParameters.*'
     job_url = re.sub(pattern, r'\1', url)
     last_build_url = job_url + "/lastBuild/api/json"
@@ -54,12 +58,14 @@ def wait_for_jenkins_job(url):
 
     inprogress = True
     max_tries = 120  # 120 tries every 5 seconds = 10 minutes
-    while inprogress != "false" and max_tries > 0:
+    app.logger.info("Waiting for Jenkins job to complete. Build ID: " + job_id)
+    while inprogress is not False and max_tries > 0:
+        app.logger.debug("Checking Jenkins job status. Remaining tries: " + str(max_tries) + "... ")
         last_job = requests.get(job_url + "/api/json")
         inprogress = last_job.json()['inProgress']
         max_tries -= 1
-        if inprogress == "false":
-            if last_job.json()['result'] == "SUCCESS":
+        if inprogress is False:
+            if last_job.json()['result'].lower() == "success":
                 app.logger.info("Job Completed Successfully")
                 return job_console_text_url, 200
             else:
@@ -95,7 +101,7 @@ def deploy_container():
     url = "http://" + auth_usr + ":" + auth_key + "@" + jenkins_server + "/job/DeployContainer/buildWithParameters?services=" + services
     app.logger.info(url.replace(auth_key, '<REDACTED>'))
     response, ec = run_jenkins_job(url)
-    return response, ec
+    return response
 
 @app.route('/run_terraform', methods=['POST'])
 def run_terraform():
@@ -104,7 +110,7 @@ def run_terraform():
     url = "http://" + auth_usr + ":" + auth_key + "@" + jenkins_server + "/job/terraform/job/terraform_" + services + "/buildWithParameters?COMMAND=apply -auto-approve --var-file=./vars/&VAR_FILE=production.tfvars"
     app.logger.info(url.replace(auth_key, '<REDACTED>'))
     response, ec = run_jenkins_job(url)
-    return response, ec
+    return response
 
 
 if __name__ == '__main__':  # These steps will only run if the app is started manually like "/bin/python thisper.py"
