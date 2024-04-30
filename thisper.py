@@ -49,7 +49,8 @@ def run_jenkins_job(url):
         warning_msg = "Jenkins host may not have been configured correctly"
         app.logger.warning(warning_msg)
         response = make_response(warning_msg, 500)
-    except json.decoder.JSONDecodeError:
+    except json.decoder.JSONDecodeError as e:
+        app.logger.error(e)
         warning_msg = "You may not have the right job path or parameters configured in Jenkins."
         app.logger.warning(warning_msg)
         response = make_response(warning_msg, 500)
