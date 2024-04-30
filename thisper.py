@@ -1,3 +1,4 @@
+import json
 from flask import Flask, request
 import requests
 import logging
@@ -32,6 +33,10 @@ def run_jenkins_job(url):
         response = response_text, ec
     except requests.exceptions.ConnectionError:
         warning_msg = "Jenkins host may not have been configured correctly"
+        app.logger.warning(warning_msg)
+        response = warning_msg, ec = 500
+    except json.decoder.JSONDecodeError:
+        warning_msg = "You may not have the right job path or parameters configured in Jenkins."
         app.logger.warning(warning_msg)
         response = warning_msg, ec = 500
     return response, ec
@@ -96,7 +101,7 @@ def deploy_container():
 def run_terraform():
     data = request.get_json()
     auth_usr, auth_key, services = sanitize_inputs(data)
-    url = "http://" + auth_usr + ":" + auth_key + "@" + jenkins_server + "/job/terraform/terraform_" + services + "/buildWithParameters?COMMAND=apply -auto-approve --var-file=./vars/&VAR_FILE=production.tfvars"
+    url = "http://" + auth_usr + ":" + auth_key + "@" + jenkins_server + "/job/terraform/job/terraform_" + services + "/buildWithParameters?COMMAND=apply -auto-approve --var-file=./vars/&VAR_FILE=production.tfvars"
     app.logger.info(url.replace(auth_key, '<REDACTED>'))
     response, ec = run_jenkins_job(url)
     return response, ec
