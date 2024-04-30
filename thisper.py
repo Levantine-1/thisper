@@ -93,7 +93,7 @@ def deploy_container():
     return response, ec
 
 @app.route('/run_terraform', methods=['POST'])
-def run_terraform(auth_usr, auth_key, services):
+def run_terraform():
     data = request.get_json()
     auth_usr, auth_key, services = sanitize_inputs(data)
     url = "http://" + auth_usr + ":" + auth_key + "@" + jenkins_server + "/job/terraform/terraform_" + services + "/buildWithParameters?COMMAND=apply -auto-approve --var-file=./vars/&VAR_FILE=production.tfvars"
