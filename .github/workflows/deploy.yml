@@ -24,7 +24,7 @@ jobs:
          timeout: 600000 # 10 minutes
 
      - name: Terraform Results
-       run: printf '%b\n' "${{ steps.terraform_refresh.outputs.response }}"
+       run: echo ${{ steps.terraform_refresh.outputs.response }}
 
      - name: Check out code
        uses: actions/checkout@v2
@@ -60,4 +60,4 @@ jobs:
          timeout: 600000 # 10 minutes
 
      - name: Container Deployment Results
-       run: printf '%b\n' "${{ steps.deploy_container.outputs.response }}"
+       run: echo ${{ steps.deploy_container.outputs.response }}
