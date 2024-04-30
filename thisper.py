@@ -8,10 +8,6 @@ import time
 jenkins_server = "jenkins.internal.levantine.io"
 app = Flask(__name__)
 
-@app.before_first_request
-def startup_code():
-    app.logger.setLevel(logging.INFO)
-
 
 def check_jenkins_server():
     try:
