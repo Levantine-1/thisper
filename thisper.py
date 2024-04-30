@@ -51,9 +51,10 @@ def run_jenkins_job(url):
         response = make_response(warning_msg, 500)
     except json.decoder.JSONDecodeError as e:
         app.logger.error(e)
-        warning_msg = "You may not have the right job path or parameters configured in Jenkins."
-        app.logger.warning(warning_msg)
-        response = make_response(warning_msg, 500)
+        msg = ("Unknown Jenkins error, check parameters: 'services' and 'auth_key' in github workflow configs."
+               "If that's not it, check job url path in thisper")
+        app.logger.error(msg)
+        response = make_response(msg, 500)
     return response
 
 
