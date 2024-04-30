@@ -5,12 +5,26 @@ import logging
 import re
 import time
 
-jenkins_server = "jenkins.internal.levantine.io"
+# jenkins_server = "jenkins.internal.levantine.io"
+jenkins_server = "localhost:81"
 app = Flask(__name__)
 
 @app.before_first_request
 def startup_code():
     app.logger.setLevel(logging.INFO)
+
+
+def check_jenkins_server():
+    try:
+        response = requests.get("http://" + jenkins_server)
+        if response.status_code == 403:  # 403 is the expected response from Jenkins as it requires authentication
+            return True
+        else:
+            app.logger.error("Jenkins server did not respond with a 403 status code.")
+            return False
+    except requests.exceptions.ConnectionError:
+        app.logger.error("Jenkins server is not reachable.")
+        return False
 
 
 @app.route('/', methods=['GET'])
@@ -28,18 +42,18 @@ def acme_challenge(token):
 def run_jenkins_job(url):
     try:
         requests.post(url)
-        job_console_text_url, ec = wait_for_jenkins_job(url)
-        response_text = requests.get(job_console_text_url).text
-        response = response_text, ec
+        response = wait_for_jenkins_job(url)
+        console_text = requests.get(response[0]).text
+        return console_text, response[1]
     except requests.exceptions.ConnectionError:
         warning_msg = "Jenkins host may not have been configured correctly"
         app.logger.warning(warning_msg)
-        response = warning_msg, ec = 500
+        response = warning_msg, 500
     except json.decoder.JSONDecodeError:
         warning_msg = "You may not have the right job path or parameters configured in Jenkins."
         app.logger.warning(warning_msg)
-        response = warning_msg, ec = 500
-    return response, ec
+        response = warning_msg, 500
+    return response
 
 
 def wait_for_jenkins_job(url):
@@ -96,20 +110,24 @@ def sanitize_inputs(data):
 #   <auth_key> = Jenkins api authorization key
 @app.route('/deploy_container', methods=['POST'])
 def deploy_container():
+    if not check_jenkins_server():
+        return "Jenkins server is not reachable.", 500
     data = request.get_json()
     auth_usr, auth_key, services = sanitize_inputs(data)
     url = "http://" + auth_usr + ":" + auth_key + "@" + jenkins_server + "/job/DeployContainer/buildWithParameters?services=" + services
     app.logger.info(url.replace(auth_key, '<REDACTED>'))
-    response, ec = run_jenkins_job(url)
+    response = run_jenkins_job(url)
     return response
 
 @app.route('/run_terraform', methods=['POST'])
 def run_terraform():
+    if not check_jenkins_server():
+        return "Jenkins server is not reachable.", 500
     data = request.get_json()
     auth_usr, auth_key, services = sanitize_inputs(data)
     url = "http://" + auth_usr + ":" + auth_key + "@" + jenkins_server + "/job/terraform/job/terraform_" + services + "/buildWithParameters?COMMAND=apply -auto-approve --var-file=./vars/&VAR_FILE=production.tfvars"
     app.logger.info(url.replace(auth_key, '<REDACTED>'))
-    response, ec = run_jenkins_job(url)
+    response = run_jenkins_job(url)
     return response
 
 

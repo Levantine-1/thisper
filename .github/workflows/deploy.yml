@@ -13,18 +13,18 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-     - name: Refresh Terraform
-       id: terraform_refresh
-       uses: fjogeleit/http-request-action@v1
-       with:
-         url: 'https://thisper.levantine.io/run_terraform'
-         method: 'POST'
-         customHeaders: '{"Content-Type": "application/json"}'
-         data: '{"auth_usr": "github", "auth_key": "${{ secrets.JENKINS_AUTH_KEY }}", "services": "thisper"}'
-         timeout: 600000 # 10 minutes
-
-     - name: Terraform Results
-       run: echo ${{ steps.terraform_refresh.outputs.response }}
+#     - name: Refresh Terraform
+#       id: terraform_refresh
+#       uses: fjogeleit/http-request-action@v1
+#       with:
+#         url: 'https://thisper.levantine.io/run_terraform'
+#         method: 'POST'
+#         customHeaders: '{"Content-Type": "application/json"}'
+#         data: '{"auth_usr": "github", "auth_key": "${{ secrets.JENKINS_AUTH_KEY }}", "services": "thisper"}'
+#         timeout: 600000 # 10 minutes
+#
+#     - name: Terraform Results
+#       run: printf '%b' "${{ steps.terraform_refresh.outputs.response }}"
 
      - name: Check out code
        uses: actions/checkout@v2
@@ -49,15 +49,15 @@ jobs:
          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
 
-     - name: Deploy Container
-       id: deploy_container
-       uses: fjogeleit/http-request-action@v1
-       with:
-         url: 'https://thisper.levantine.io/deploy_container'
-         method: 'POST'
-         customHeaders: '{"Content-Type": "application/json"}'
-         data: '{"auth_usr": "github", "auth_key": "${{ secrets.JENKINS_AUTH_KEY }}", "services": "thisper"}'
-         timeout: 600000 # 10 minutes
-
-     - name: Container Deployment Results
-       run: echo ${{ steps.deploy_container.outputs.response }}
+#     - name: Deploy Container
+#       id: deploy_container
+#       uses: fjogeleit/http-request-action@v1
+#       with:
+#         url: 'https://thisper.levantine.io/deploy_container'
+#         method: 'POST'
+#         customHeaders: '{"Content-Type": "application/json"}'
+#         data: '{"auth_usr": "github", "auth_key": "${{ secrets.JENKINS_AUTH_KEY }}", "services": "thisper"}'
+#         timeout: 600000 # 10 minutes
+#
+#     - name: Container Deployment Results
+#       run: printf '%b'  ${{ steps.deploy_container.outputs.response }}
