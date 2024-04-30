@@ -3,6 +3,7 @@
 /terraform/.terraform.lock.hcl
 /terraform/terraform.tfstate
 /terraform/terraform.tfstate.backup
+/scratch.py
 .idea/misc.xml
 .idea/thisper.iml
 .idea
