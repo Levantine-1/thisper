@@ -24,7 +24,12 @@ jobs:
          timeout: 600000 # 10 minutes
 
      - name: Terraform Results
-       run: echo ${{ steps.terraform_refresh.outputs.response }}
+       run: |
+         # Use printf to interpret escape sequences
+         output=$(printf '%b' "${{ steps.terraform_refresh.outputs.response }}")
+         while IFS= read -r line; do
+           echo "$line"
+         done <<< "$output"
 
      - name: Check out code
        uses: actions/checkout@v2
@@ -60,4 +65,9 @@ jobs:
          timeout: 600000 # 10 minutes
 
      - name: Container Deployment Results
-       run: echo ${{ steps.deploy_container.outputs.response }}
+       run: |
+         # Use printf to interpret escape sequences
+         output=$(printf '%b' "${{ steps.deploy_container.outputs.response }}")
+         while IFS= read -r line; do
+           echo "$line"
+         done <<< "$output"
