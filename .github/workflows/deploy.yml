@@ -21,6 +21,7 @@ jobs:
          method: 'POST'
          customHeaders: '{"Content-Type": "application/json"}'
          data: '{"auth_usr": "github", "auth_key": "${{ secrets.JENKINS_AUTH_KEY }}", "services": "thisper"}'
+         timeout: 600000 # 10 minutes
 
      - name: Terraform Results
        run: echo ${{ steps.terraform_refresh.outputs.response }}
@@ -56,6 +57,7 @@ jobs:
          method: 'POST'
          customHeaders: '{"Content-Type": "application/json"}'
          data: '{"auth_usr": "github", "auth_key": "${{ secrets.JENKINS_AUTH_KEY }}", "services": "thisper"}'
+         timeout: 600000 # 10 minutes
 
      - name: Container Deployment Results
        run: echo ${{ steps.deploy_container.outputs.response }}
