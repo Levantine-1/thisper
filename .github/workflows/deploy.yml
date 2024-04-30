@@ -62,4 +62,4 @@ jobs:
 
      - name: Container Deployment Results
        run: |
-         echo ${{ steps.terraform_refresh.outputs.response }}
+         echo ${{ steps.deploy_container.outputs.response }}
