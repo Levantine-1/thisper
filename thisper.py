@@ -1,5 +1,5 @@
 import json
-from flask import Flask, request
+from flask import Flask, request, make_response
 import requests
 import logging
 import re
@@ -43,15 +43,16 @@ def run_jenkins_job(url):
         requests.post(url)
         response = wait_for_jenkins_job(url)
         console_text = requests.get(response[0]).text
-        return console_text, response[1]
+        status_code = response[1]
+        response = make_response(console_text, status_code)
     except requests.exceptions.ConnectionError:
         warning_msg = "Jenkins host may not have been configured correctly"
         app.logger.warning(warning_msg)
-        response = warning_msg, 500
+        response = make_response(warning_msg, 500)
     except json.decoder.JSONDecodeError:
         warning_msg = "You may not have the right job path or parameters configured in Jenkins."
         app.logger.warning(warning_msg)
-        response = warning_msg, 500
+        response = make_response(warning_msg, 500)
     return response
 
 
@@ -117,7 +118,8 @@ def deploy_container():
     app.logger.info(url.replace(auth_key, '<REDACTED>'))
     if services == "thisper":
         requests.post(url)
-        response = "Deploying thisper requires thisper to restart so there will be no console output for this specifc service.", 200
+        message = "Deploying thisper requires thisper to restart so there will be no console output for this specifc service."
+        response = make_response(message, 200)
     else:
         response = run_jenkins_job(url)
     return response

@@ -24,7 +24,8 @@ jobs:
          timeout: 600000 # 10 minutes
 
      - name: Terraform Results
-       run: echo "${{ steps.terraform_refresh.outputs.response }}" | while IFS= read -r line; do echo "$line" ; done
+       run: |
+        echo ${{ steps.terraform_refresh.outputs.response }}
 
      - name: Check out code
        uses: actions/checkout@v2
@@ -61,4 +62,4 @@ jobs:
 
      - name: Container Deployment Results
        run: |
-        echo "${{ steps.deploy_container.outputs.response }}" | while IFS= read -r line; do echo "$line" ; done
+         echo ${{ steps.terraform_refresh.outputs.response }}
