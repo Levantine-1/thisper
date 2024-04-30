@@ -5,8 +5,7 @@ import logging
 import re
 import time
 
-# jenkins_server = "jenkins.internal.levantine.io"
-jenkins_server = "localhost:81"
+jenkins_server = "jenkins.internal.levantine.io"
 app = Flask(__name__)
 
 @app.before_first_request
