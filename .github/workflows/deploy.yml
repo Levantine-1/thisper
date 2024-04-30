@@ -25,11 +25,7 @@ jobs:
 
      - name: Terraform Results
        run: |
-         # Use printf to interpret escape sequences
-         output=$(printf '%b' "${{ steps.terraform_refresh.outputs.response }}")
-         while IFS= read -r line; do
-           echo "$line"
-         done <<< "$output"
+        echo ${{ steps.terraform_refresh.outputs.response }}
 
      - name: Check out code
        uses: actions/checkout@v2
@@ -66,8 +62,4 @@ jobs:
 
      - name: Container Deployment Results
        run: |
-         # Use printf to interpret escape sequences
-         output=$(printf '%b' "${{ steps.deploy_container.outputs.response }}")
-         while IFS= read -r line; do
-           echo "$line"
-         done <<< "$output"
+         echo ${{ steps.terraform_refresh.outputs.response }}
