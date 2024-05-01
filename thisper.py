@@ -5,8 +5,7 @@ import logging
 import re
 import time
 
-# jenkins_server = "jenkins.internal.levantine.io"
-jenkins_server = "localhost:81"
+jenkins_server = "jenkins.internal.levantine.io"
 app = Flask(__name__)
 
 
@@ -142,7 +141,8 @@ def poll_deploy_job_status():
     services = sanitized_data['services']
     job_id   = sanitized_data['job_id']
 
-    url = "http://" + auth_usr + ":" + auth_key + "@" + jenkins_server + "/job/DeployContainer/" + job_id + "/api/json"
+    url              = "http://" + auth_usr + ":" + auth_key + "@" + jenkins_server + "/job/DeployContainer/" + job_id + "/api/json"
+    console_text_url = "http://" + auth_usr + ":" + auth_key + "@" + jenkins_server + "/job/DeployContainer/" + job_id + "/consoleText"
     status = requests.get(url)
     inprogress = status.json()['inProgress']
     if inprogress is True:
@@ -150,9 +150,10 @@ def poll_deploy_job_status():
         response = make_response(msg, 202)
         return response
     else:
-        msg = "Job is complete"
-        response = make_response(msg, 200)
-        return response
+        response = requests.get(console_text_url)
+        flask_response = make_response(response.content)
+        flask_response.headers['Content-Type'] = response.headers['Content-Type']
+        return flask_response
 
 
 @app.route('/run_terraform', methods=['POST'])
@@ -190,17 +191,19 @@ def poll_terraform_job_status():
     services = sanitized_data['services']
     job_id   = sanitized_data['job_id']
 
-    url = "http://" + auth_usr + ":" + auth_key + "@" + jenkins_server + "/job/terraform/job/terraform_" + services + "/" + job_id + "/api/json"
+    url              = "http://" + auth_usr + ":" + auth_key + "@" + jenkins_server + "/job/terraform/job/terraform_" + services + "/" + job_id + "/api/json"
+    console_text_url = "http://" + auth_usr + ":" + auth_key + "@" + jenkins_server + "/job/terraform/job/terraform_" + services + "/" + job_id + "/consoleText"
     status = requests.get(url)
     inprogress = status.json()['inProgress']
     if inprogress is True:
-        msg = "Job in progress"
+        msg = "Please wait, job still in progress..."
         response = make_response(msg, 202)
         return response
     else:
-        msg = "Job is complete"
-        response = make_response(msg, 200)
-        return response
+        response = requests.get(console_text_url)
+        flask_response = make_response(response.content)
+        flask_response.headers['Content-Type'] = response.headers['Content-Type']
+        return flask_response
 
 
 if __name__ == '__main__':  # These steps will only run if the app is started manually like "/bin/python thisper.py"
