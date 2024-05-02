@@ -51,6 +51,7 @@ jobs:
 
   build_and_push_container:
     name: Build and Push Docker Container to ECR
+    needs: run_terraform
     runs-on: ubuntu-latest
     steps:
      - name: Check out code
@@ -79,6 +80,7 @@ jobs:
   deploy_container:
     name: Deploy Container
     runs-on: ubuntu-latest
+    needs: build_and_push_container
     steps:
       - name: Deploy Container
         id: deploy_container
