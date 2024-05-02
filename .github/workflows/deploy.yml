@@ -113,4 +113,4 @@ jobs:
               echo "Job failed. Check Jenkins logs for more information."
               curl --location --request GET "${{ poll_url }}" --header 'Content-Type: application/json' --data "{\"auth_usr\": \"github\", \"auth_key\": \"${{ secrets.JENKINS_AUTH_KEY }}\", \"service_name\": \"${{ env.service_name }}\", \"job_id\": \"${job_id}\"}"
               exit 1
-            fiponse }}
+            fi
