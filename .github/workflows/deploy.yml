@@ -35,16 +35,16 @@ jobs:
               exit 1
             fi
           
-            rc=$(curl --location -w "%{http_code}" -o /dev/null --silent --request GET "${{ poll_url }}" --header 'Content-Type: application/json' --data "{\"auth_usr\": \"github\", \"auth_key\": \"${{ secrets.JENKINS_AUTH_KEY }}\", \"service_name\": \"${{ env.service_name }}\", \"job_id\": \"${job_id}\"}")
+            rc=$(curl --location -w "%{http_code}" -o /dev/null --silent --request GET "${poll_url}" --header 'Content-Type: application/json' --data "{\"auth_usr\": \"github\", \"auth_key\": \"${{ secrets.JENKINS_AUTH_KEY }}\", \"service_name\": \"${{ env.service_name }}\", \"job_id\": \"${job_id}\"}")
             if [[ $rc -eq 202 ]]; then
               echo "Job in progress..."
             elif [[ $rc -eq 200 ]]; then
               echo "Job completed successfully, outputting logs..."
-              curl --location --request GET "${{ poll_url }}" --header 'Content-Type: application/json' --data "{\"auth_usr\": \"github\", \"auth_key\": \"${{ secrets.JENKINS_AUTH_KEY }}\", \"service_name\": \"${{ env.service_name }}\", \"job_id\": \"${job_id}\"}"
+              curl --location --request GET "${poll_url}" --header 'Content-Type: application/json' --data "{\"auth_usr\": \"github\", \"auth_key\": \"${{ secrets.JENKINS_AUTH_KEY }}\", \"service_name\": \"${{ env.service_name }}\", \"job_id\": \"${job_id}\"}"
               break
             else
               echo "Job failed. Check Jenkins logs for more information."
-              curl --location --request GET "${{ poll_url }}" --header 'Content-Type: application/json' --data "{\"auth_usr\": \"github\", \"auth_key\": \"${{ secrets.JENKINS_AUTH_KEY }}\", \"service_name\": \"${{ env.service_name }}\", \"job_id\": \"${job_id}\"}"
+              curl --location --request GET "${poll_url}" --header 'Content-Type: application/json' --data "{\"auth_usr\": \"github\", \"auth_key\": \"${{ secrets.JENKINS_AUTH_KEY }}\", \"service_name\": \"${{ env.service_name }}\", \"job_id\": \"${job_id}\"}"
               exit 1
             fi
 
@@ -99,18 +99,18 @@ jobs:
               exit 1
             fi
           
-            rc=$(curl --location -w "%{http_code}" -o /dev/null --silent --request GET "${{ poll_url }}" --header 'Content-Type: application/json' --data "{\"auth_usr\": \"github\", \"auth_key\": \"${{ secrets.JENKINS_AUTH_KEY }}\", \"service_name\": \"${{ env.service_name }}\", \"job_id\": \"${job_id}\"}")
+            rc=$(curl --location -w "%{http_code}" -o /dev/null --silent --request GET "${poll_url}" --header 'Content-Type: application/json' --data "{\"auth_usr\": \"github\", \"auth_key\": \"${{ secrets.JENKINS_AUTH_KEY }}\", \"service_name\": \"${{ env.service_name }}\", \"job_id\": \"${job_id}\"}")
             if [[ $rc -eq 202 ]]; then
               echo "Job in progress..."
             elif [[ $rc -eq 200 ]]; then
               echo "Job completed successfully, outputting logs..."
-              curl --location --request GET "${{ poll_url }}" --header 'Content-Type: application/json' --data "{\"auth_usr\": \"github\", \"auth_key\": \"${{ secrets.JENKINS_AUTH_KEY }}\", \"service_name\": \"${{ env.service_name }}\", \"job_id\": \"${job_id}\"}"
+              curl --location --request GET "${poll_url}" --header 'Content-Type: application/json' --data "{\"auth_usr\": \"github\", \"auth_key\": \"${{ secrets.JENKINS_AUTH_KEY }}\", \"service_name\": \"${{ env.service_name }}\", \"job_id\": \"${job_id}\"}"
               break
             elif [[ ${{ env.service_name }} == "thisper" ]]; then
               echo "Getting bad responses from thisper deployments is expected, as thisper deployments restarts thisper and nginx will throw errors."
               echo "However, if it continues too long, check jenkins logs as it may be a problem with the deployment."
             else
               echo "Job failed. Check Jenkins logs for more information."
-              curl --location --request GET "${{ poll_url }}" --header 'Content-Type: application/json' --data "{\"auth_usr\": \"github\", \"auth_key\": \"${{ secrets.JENKINS_AUTH_KEY }}\", \"service_name\": \"${{ env.service_name }}\", \"job_id\": \"${job_id}\"}"
+              curl --location --request GET "${poll_url}" --header 'Content-Type: application/json' --data "{\"auth_usr\": \"github\", \"auth_key\": \"${{ secrets.JENKINS_AUTH_KEY }}\", \"service_name\": \"${{ env.service_name }}\", \"job_id\": \"${job_id}\"}"
               exit 1
             fi
