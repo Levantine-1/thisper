@@ -8,10 +8,9 @@ on:
      - 'master'
 
 jobs:
-  build:
-    name: Build and Deploy
+  run_terraform:
+    name: Run Terraform Templates
     runs-on: ubuntu-latest
-
     steps:
      - name: Refresh Terraform
        id: terraform_refresh
@@ -21,12 +20,15 @@ jobs:
          method: 'POST'
          customHeaders: '{"Content-Type": "application/json"}'
          data: '{"auth_usr": "github", "auth_key": "${{ secrets.JENKINS_AUTH_KEY }}", "services": "thisper"}'
-         timeout: 600000 # 10 minutes
 
      - name: Terraform Results
        run: |
         echo ${{ steps.terraform_refresh.outputs.response }}
 
+  build_and_push_container:
+    name: Build and Push Docker Container to ECR
+    runs-on: ubuntu-latest
+    steps:
      - name: Check out code
        uses: actions/checkout@v2
 
@@ -50,6 +52,10 @@ jobs:
          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
 
+  deploy_container:
+    name: Deploy Container
+    runs-on: ubuntu-latest
+    steps:
      - name: Deploy Container
        id: deploy_container
        uses: fjogeleit/http-request-action@v1
@@ -58,7 +64,6 @@ jobs:
          method: 'POST'
          customHeaders: '{"Content-Type": "application/json"}'
          data: '{"auth_usr": "github", "auth_key": "${{ secrets.JENKINS_AUTH_KEY }}", "services": "thisper"}'
-         timeout: 600000 # 10 minutes
 
      - name: Container Deployment Results
        run: |
