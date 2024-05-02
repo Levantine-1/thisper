@@ -19,13 +19,20 @@ jobs:
       - name: Refresh Terraform
         id: terraform_refresh
         run: |
-          job_id=$(curl --location --request POST "${{ env.url }}/run_terraform" --header 'Content-Type: application/json' --data "{\"auth_usr\": \"github\", \"auth_key\": \"${{ secrets.JENKINS_AUTH_KEY }}\", \"service_name\": \"${{ env.service_name }}\"}")
+          data="{\"auth_usr\": \"github\", \"auth_key\": \"${{ secrets.JENKINS_AUTH_KEY }}\", \"service_name\": \"${{ env.service_name }}\"}"
+          header='Content-Type: application/json'
+          job_id=$(curl --request POST --location "${{ env.url }}/run_terraform" --header ${header} --data ${data} --silent)
+          echo "Job ID: ${job_id}"
 
       - name: Wait for Terraform to complete
         run: |
           timeout=600  # Timeout in seconds (e.g., 10 minutes)
           start_time=$(date +%s)
+          
           poll_url="${{ env.url }}/poll_terraform_job_status"
+          data="{\"auth_usr\": \"github\", \"auth_key\": \"${{ secrets.JENKINS_AUTH_KEY }}\", \"service_name\": \"${{ env.service_name }}\", \"job_id\": \"${job_id}\"}"
+          rc_params="-w \"%{http_code}\" -o /dev/null"
+          header ='Content-Type: application/json'
           
           while true; do
             current_time=$(date +%s)
@@ -35,16 +42,16 @@ jobs:
               exit 1
             fi
           
-            rc=$(curl --location -w "%{http_code}" -o /dev/null --silent --request GET "${poll_url}" --header 'Content-Type: application/json' --data "{\"auth_usr\": \"github\", \"auth_key\": \"${{ secrets.JENKINS_AUTH_KEY }}\", \"service_name\": \"${{ env.service_name }}\", \"job_id\": \"${job_id}\"}")
+            rc=$(curl --request GET --location "${poll_url}" --header ${header} --data ${data} ${rc_params} --silent)
             if [[ $rc -eq 202 ]]; then
               echo "Job in progress..."
             elif [[ $rc -eq 200 ]]; then
               echo "Job completed successfully, outputting logs..."
-              curl --location --request GET "${poll_url}" --header 'Content-Type: application/json' --data "{\"auth_usr\": \"github\", \"auth_key\": \"${{ secrets.JENKINS_AUTH_KEY }}\", \"service_name\": \"${{ env.service_name }}\", \"job_id\": \"${job_id}\"}"
+              curl --request GET --location "${poll_url}" --header ${header} --data ${data} --silent"
               break
             else
               echo "Job failed. Check Jenkins logs for more information."
-              curl --location --request GET "${poll_url}" --header 'Content-Type: application/json' --data "{\"auth_usr\": \"github\", \"auth_key\": \"${{ secrets.JENKINS_AUTH_KEY }}\", \"service_name\": \"${{ env.service_name }}\", \"job_id\": \"${job_id}\"}"
+              curl --request GET --location "${poll_url}" --header ${header} --data ${data} --silent"
               exit 1
             fi
 
@@ -91,7 +98,11 @@ jobs:
         run: |
           timeout=600  # Timeout in seconds (e.g., 10 minutes)
           start_time=$(date +%s)
-          poll_url="${{ env.url }}/poll_deploy_job_status"
+          
+          poll_url="${{ env.url }}/deploy_container"
+          data="{\"auth_usr\": \"github\", \"auth_key\": \"${{ secrets.JENKINS_AUTH_KEY }}\", \"service_name\": \"${{ env.service_name }}\", \"job_id\": \"${job_id}\"}"
+          rc_params="-w \"%{http_code}\" -o /dev/null"
+          header ='Content-Type: application/json'
           
           while true; do
             current_time=$(date +%s)
@@ -101,18 +112,15 @@ jobs:
               exit 1
             fi
           
-            rc=$(curl --location -w "%{http_code}" -o /dev/null --silent --request GET "${poll_url}" --header 'Content-Type: application/json' --data "{\"auth_usr\": \"github\", \"auth_key\": \"${{ secrets.JENKINS_AUTH_KEY }}\", \"service_name\": \"${{ env.service_name }}\", \"job_id\": \"${job_id}\"}")
+            rc=$(curl --request GET --location "${poll_url}" --header ${header} --data ${data} ${rc_params} --silent)
             if [[ $rc -eq 202 ]]; then
               echo "Job in progress..."
             elif [[ $rc -eq 200 ]]; then
               echo "Job completed successfully, outputting logs..."
-              curl --location --request GET "${poll_url}" --header 'Content-Type: application/json' --data "{\"auth_usr\": \"github\", \"auth_key\": \"${{ secrets.JENKINS_AUTH_KEY }}\", \"service_name\": \"${{ env.service_name }}\", \"job_id\": \"${job_id}\"}"
+              curl --request GET --location "${poll_url}" --header ${header} --data ${data} --silent"
               break
-            elif [[ ${{ env.service_name }} == "thisper" ]]; then
-              echo "Getting bad responses from thisper deployments is expected, as thisper deployments restarts thisper and nginx will throw errors."
-              echo "However, if it continues too long, check jenkins logs as it may be a problem with the deployment."
             else
               echo "Job failed. Check Jenkins logs for more information."
-              curl --location --request GET "${poll_url}" --header 'Content-Type: application/json' --data "{\"auth_usr\": \"github\", \"auth_key\": \"${{ secrets.JENKINS_AUTH_KEY }}\", \"service_name\": \"${{ env.service_name }}\", \"job_id\": \"${job_id}\"}"
+              curl --request GET --location "${poll_url}" --header ${header} --data ${data} --silent"
               exit 1
             fi
