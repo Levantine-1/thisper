@@ -7,26 +7,52 @@ on:
     branches:
      - 'master'
 
+env:
+  service_name: thisper
+  url: 'https://thisper.levantine.io'
+
 jobs:
-  build:
-    name: Build and Deploy
+  run_terraform:
+    name: Run Terraform Templates
     runs-on: ubuntu-latest
-
     steps:
-     - name: Refresh Terraform
-       id: terraform_refresh
-       uses: fjogeleit/http-request-action@v1
-       with:
-         url: 'https://thisper.levantine.io/run_terraform'
-         method: 'POST'
-         customHeaders: '{"Content-Type": "application/json"}'
-         data: '{"auth_usr": "github", "auth_key": "${{ secrets.JENKINS_AUTH_KEY }}", "services": "thisper"}'
-         timeout: 600000 # 10 minutes
+      - name: Refresh Terraform
+        id: terraform_refresh
+        run: |
+          job_id=$(curl --location --request POST "${{ env.url }}/run_terraform" --header 'Content-Type: application/json' --data "{\"auth_usr\": \"github\", \"auth_key\": \"${{ secrets.JENKINS_AUTH_KEY }}\", \"service_name\": \"${{ env.service_name }}\"}")
 
-     - name: Terraform Results
-       run: |
-        echo ${{ steps.terraform_refresh.outputs.response }}
+      - name: Wait for Terraform to complete
+        run: |
+          timeout=600  # Timeout in seconds (e.g., 10 minutes)
+          start_time=$(date +%s)
+          poll_url="${{ env.url }}/poll_terraform_job_status"
+          
+          while true; do
+            current_time=$(date +%s)
+            elapsed_time=$((current_time - start_time))
+            if [[ $elapsed_time -ge $timeout ]]; then
+              echo "Timeout reached. Job didn't finish within the specified time."
+              exit 1
+            fi
+          
+            rc=$(curl --location -w "%{http_code}" -o /dev/null --silent --request GET "${{ poll_url }}" --header 'Content-Type: application/json' --data "{\"auth_usr\": \"github\", \"auth_key\": \"${{ secrets.JENKINS_AUTH_KEY }}\", \"service_name\": \"${{ env.service_name }}\", \"job_id\": \"${job_id}\"}")
+            if [[ $rc -eq 202 ]]; then
+              echo "Job in progress..."
+            elif [[ $rc -eq 200 ]]; then
+              echo "Job completed successfully, outputting logs..."
+              curl --location --request GET "${{ poll_url }}" --header 'Content-Type: application/json' --data "{\"auth_usr\": \"github\", \"auth_key\": \"${{ secrets.JENKINS_AUTH_KEY }}\", \"service_name\": \"${{ env.service_name }}\", \"job_id\": \"${job_id}\"}"
+              break
+            else
+              echo "Job failed. Check Jenkins logs for more information."
+              curl --location --request GET "${{ poll_url }}" --header 'Content-Type: application/json' --data "{\"auth_usr\": \"github\", \"auth_key\": \"${{ secrets.JENKINS_AUTH_KEY }}\", \"service_name\": \"${{ env.service_name }}\", \"job_id\": \"${job_id}\"}"
+              exit 1
+            fi
 
+
+  build_and_push_container:
+    name: Build and Push Docker Container to ECR
+    runs-on: ubuntu-latest
+    steps:
      - name: Check out code
        uses: actions/checkout@v2
 
@@ -50,16 +76,41 @@ jobs:
          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
 
-     - name: Deploy Container
-       id: deploy_container
-       uses: fjogeleit/http-request-action@v1
-       with:
-         url: 'https://thisper.levantine.io/deploy_container'
-         method: 'POST'
-         customHeaders: '{"Content-Type": "application/json"}'
-         data: '{"auth_usr": "github", "auth_key": "${{ secrets.JENKINS_AUTH_KEY }}", "services": "thisper"}'
-         timeout: 600000 # 10 minutes
+  deploy_container:
+    name: Deploy Container
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy Container
+        id: deploy_container
+        run: |
+          job_id=$(curl --location --request POST "${{ env.url }}/deploy_container" --header 'Content-Type: application/json' --data "{\"auth_usr\": \"github\", \"auth_key\": \"${{ secrets.JENKINS_AUTH_KEY }}\", \"service_name\": \"${{ env.service_name }}\"}")
 
-     - name: Container Deployment Results
-       run: |
-         echo ${{ steps.deploy_container.outputs.response }}
+      - name: Wait for Terraform to complete
+        run: |
+          timeout=600  # Timeout in seconds (e.g., 10 minutes)
+          start_time=$(date +%s)
+          poll_url="${{ env.url }}/poll_deploy_job_status"
+          
+          while true; do
+            current_time=$(date +%s)
+            elapsed_time=$((current_time - start_time))
+            if [[ $elapsed_time -ge $timeout ]]; then
+              echo "Timeout reached. Job didn't finish within the specified time."
+              exit 1
+            fi
+          
+            rc=$(curl --location -w "%{http_code}" -o /dev/null --silent --request GET "${{ poll_url }}" --header 'Content-Type: application/json' --data "{\"auth_usr\": \"github\", \"auth_key\": \"${{ secrets.JENKINS_AUTH_KEY }}\", \"service_name\": \"${{ env.service_name }}\", \"job_id\": \"${job_id}\"}")
+            if [[ $rc -eq 202 ]]; then
+              echo "Job in progress..."
+            elif [[ $rc -eq 200 ]]; then
+              echo "Job completed successfully, outputting logs..."
+              curl --location --request GET "${{ poll_url }}" --header 'Content-Type: application/json' --data "{\"auth_usr\": \"github\", \"auth_key\": \"${{ secrets.JENKINS_AUTH_KEY }}\", \"service_name\": \"${{ env.service_name }}\", \"job_id\": \"${job_id}\"}"
+              break
+            elif [[ ${{ env.service_name }} == "thisper" ]]; then
+              echo "Getting bad responses from thisper deployments is expected, as thisper deployments restarts thisper and nginx will throw errors."
+              echo "However, if it continues too long, check jenkins logs as it may be a problem with the deployment."
+            else
+              echo "Job failed. Check Jenkins logs for more information."
+              curl --location --request GET "${{ poll_url }}" --header 'Content-Type: application/json' --data "{\"auth_usr\": \"github\", \"auth_key\": \"${{ secrets.JENKINS_AUTH_KEY }}\", \"service_name\": \"${{ env.service_name }}\", \"job_id\": \"${job_id}\"}"
+              exit 1
+            fiponse }}
