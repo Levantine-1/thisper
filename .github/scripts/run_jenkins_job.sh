@@ -17,7 +17,7 @@
 # the python modules I needed. And I didn't want to install them in the github runner if I needed to.
 
 trigger_jenkins_job(){
-  data="{\"auth_usr\": \"github\", \"auth_key\": \"${JENKINS_AUTH_KEY}\", \"service_name\": \"${service_name}\"}"
+  data={\"auth_usr\": \"github\", \"auth_key\": \"${JENKINS_AUTH_KEY}\", \"service_name\": \"${service_name}\"}
   header='Content-Type: application/json'
   job_id=$(curl --request POST --location "${url}/${trigger_path}" --header "${header}" --data "${data}" --silent)
   echo "${job_id}" # Return the job ID
@@ -29,7 +29,7 @@ poll_job_status(){
   start_time=$(date +%s)
 
   url="${url}/${poll_path}"
-  data="{\"auth_usr\": \"github\", \"auth_key\": \"${JENKINS_AUTH_KEY}\", \"service_name\": \"${service_name}\", \"job_id\": \"${job_id}\"}"
+  data={\"auth_usr\": \"github\", \"auth_key\": \"${JENKINS_AUTH_KEY}\", \"service_name\": \"${service_name}\", \"job_id\": \"${job_id}\"}
   header='Content-Type: application/json'
 
   while true; do
