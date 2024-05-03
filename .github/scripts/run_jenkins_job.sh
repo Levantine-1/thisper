@@ -1,12 +1,11 @@
 #!/bin/bash
 # This script triggers a Jenkins job through Thisper and polls the job status until it's complete.
-# The script takes two arguments:
-#   1. The URL path to trigger the Jenkins job
-#   2. The URL path to poll the job status
 # The script uses the following environment variables:
 #   1. url: The Jenkins URL
 #   2. service_name: The service name
-# The script uses the following secrets:
+#   3. trigger_path: The Jenkins job trigger path
+#   4. poll_path: The Jenkins job poll path
+# The script uses the following secrets (encrypted environment variables):
 #   1. JENKINS_AUTH_KEY: The Jenkins authentication key
 
 # Although this script can be deployed in any repo, it is primarily maintained in the Thisper repository.
@@ -18,21 +17,19 @@
 # the python modules I needed. And I didn't want to install them in the github runner if I needed to.
 
 trigger_jenkins_job(){
-  url_path=$1
-  data="{\"auth_usr\": \"github\", \"auth_key\": \"${{ secrets.JENKINS_AUTH_KEY }}\", \"service_name\": \"${{ env.service_name }}\"}"
+  data="{\"auth_usr\": \"github\", \"auth_key\": \"${JENKINS_AUTH_KEY}\", \"service_name\": \"${service_name}\"}"
   header='Content-Type: application/json'
-  job_id=$(curl --request POST --location "${{ env.url }}/${url_path}" --header "${header}" --data "${data}" --silent)
+  job_id=$(curl --request POST --location "${{ env.url }}/${trigger_path}" --header "${header}" --data "${data}" --silent)
   echo "${job_id}" # Return the job ID
 }
 
 poll_job_status(){
   job_id=$1
-  poll_url_path=$2
   timeout=600  # Timeout in seconds (e.g., 10 minutes)
   start_time=$(date +%s)
 
-  url="${{ env.url }}/${poll_url_path}"
-  data="{\"auth_usr\": \"github\", \"auth_key\": \"${{ secrets.JENKINS_AUTH_KEY }}\", \"service_name\": \"${{ env.service_name }}\", \"job_id\": \"${job_id}\"}"
+  url="${{ env.url }}/${poll_path}"
+  data="{\"auth_usr\": \"github\", \"auth_key\": \"${JENKINS_AUTH_KEY}\", \"service_name\": \"${service_name}\", \"job_id\": \"${job_id}\"}"
   rc_params="-w \"%{http_code}\" -o /dev/null"
   header='Content-Type: application/json'
 
@@ -61,11 +58,8 @@ poll_job_status(){
 }
 
 main(){
-  trigger_url_path=$1
-  poll_url_path=$2
-
-  job_id=$(trigger_jenkins_job "${trigger_url_path}")
-  poll_job_status "${job_id}" "${poll_url_path}"
+  job_id=$(trigger_jenkins_job)
+  poll_job_status "${job_id}"
 }
 
-main "$@"
+main
