@@ -103,6 +103,7 @@ def sanitize_inputs(**data):
 
     return sanitized_data
 
+
 # Pass in the following parameters:
 #   <job_id> = name of jenkins job
 #   <auth_key> = Jenkins api authorization key

@@ -16,54 +16,17 @@ jobs:
     name: Run Terraform Templates
     runs-on: ubuntu-latest
     steps:
+      - name: Check out code
+        uses: actions/checkout@v2
+
       - name: Refresh Terraform
-        id: terraform_refresh
-        run: |
-          data="{\"auth_usr\": \"github\", \"auth_key\": \"${{ secrets.JENKINS_AUTH_KEY }}\", \"service_name\": \"${{ env.service_name }}\"}"
-          header='Content-Type: application/json'
-          job_id=$(curl --request POST --location "${{ env.url }}/run_terraform" --header ${header} --data ${data} --silent)
-          echo "Job ID: ${job_id}"
-
-      - name: Wait for Terraform to complete
-        run: |
-          timeout=600  # Timeout in seconds (e.g., 10 minutes)
-          start_time=$(date +%s)
-          
-          poll_url="${{ env.url }}/poll_terraform_job_status"
-          data="{\"auth_usr\": \"github\", \"auth_key\": \"${{ secrets.JENKINS_AUTH_KEY }}\", \"service_name\": \"${{ env.service_name }}\", \"job_id\": \"${job_id}\"}"
-          rc_params="-w \"%{http_code}\" -o /dev/null"
-          header ='Content-Type: application/json'
-          
-          while true; do
-            current_time=$(date +%s)
-            elapsed_time=$((current_time - start_time))
-            if [[ $elapsed_time -ge $timeout ]]; then
-              echo "Timeout reached. Job didn't finish within the specified time."
-              exit 1
-            fi
-          
-            rc=$(curl --request GET --location "${poll_url}" --header ${header} --data ${data} ${rc_params} --silent)
-            if [[ $rc -eq 202 ]]; then
-              echo "Job in progress..."
-            elif [[ $rc -eq 200 ]]; then
-              echo "Job completed successfully, outputting logs..."
-              curl --request GET --location "${poll_url}" --header ${header} --data ${data} --silent"
-              break
-            else
-              echo "Job failed. Check Jenkins logs for more information."
-              curl --request GET --location "${poll_url}" --header ${header} --data ${data} --silent"
-              exit 1
-            fi
-
+        run: /bin/bash .github/scripts/run_jenkins_job.sh run_terraform poll_terraform_job_status
 
   build_and_push_container:
     name: Build and Push Docker Container to ECR
     needs: run_terraform
     runs-on: ubuntu-latest
     steps:
-     - name: Check out code
-       uses: actions/checkout@v2
-
      - name: Configure AWS credentials
        uses: aws-actions/configure-aws-credentials@v1
        with:
@@ -90,37 +53,4 @@ jobs:
     needs: build_and_push_container
     steps:
       - name: Deploy Container
-        id: deploy_container
-        run: |
-          job_id=$(curl --location --request POST "${{ env.url }}/deploy_container" --header 'Content-Type: application/json' --data "{\"auth_usr\": \"github\", \"auth_key\": \"${{ secrets.JENKINS_AUTH_KEY }}\", \"service_name\": \"${{ env.service_name }}\"}")
-
-      - name: Wait for Terraform to complete
-        run: |
-          timeout=600  # Timeout in seconds (e.g., 10 minutes)
-          start_time=$(date +%s)
-          
-          poll_url="${{ env.url }}/deploy_container"
-          data="{\"auth_usr\": \"github\", \"auth_key\": \"${{ secrets.JENKINS_AUTH_KEY }}\", \"service_name\": \"${{ env.service_name }}\", \"job_id\": \"${job_id}\"}"
-          rc_params="-w \"%{http_code}\" -o /dev/null"
-          header ='Content-Type: application/json'
-          
-          while true; do
-            current_time=$(date +%s)
-            elapsed_time=$((current_time - start_time))
-            if [[ $elapsed_time -ge $timeout ]]; then
-              echo "Timeout reached. Job didn't finish within the specified time."
-              exit 1
-            fi
-          
-            rc=$(curl --request GET --location "${poll_url}" --header ${header} --data ${data} ${rc_params} --silent)
-            if [[ $rc -eq 202 ]]; then
-              echo "Job in progress..."
-            elif [[ $rc -eq 200 ]]; then
-              echo "Job completed successfully, outputting logs..."
-              curl --request GET --location "${poll_url}" --header ${header} --data ${data} --silent"
-              break
-            else
-              echo "Job failed. Check Jenkins logs for more information."
-              curl --request GET --location "${poll_url}" --header ${header} --data ${data} --silent"
-              exit 1
-            fi
+        run: /bin/bash .github/scripts/run_jenkins_job.sh deploy_container poll_deploy_job_status
