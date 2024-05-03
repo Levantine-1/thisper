@@ -1,5 +1,5 @@
 import json
-from flask import Flask, request, make_response
+from flask import Flask, request, make_response, jsonify
 import requests
 import logging
 import re
@@ -104,104 +104,78 @@ def sanitize_inputs(**data):
     return sanitized_data
 
 
-# Pass in the following parameters:
-#   <job_id> = name of jenkins job
-#   <auth_key> = Jenkins api authorization key
-@app.route('/deploy_container', methods=['POST'])
-def deploy_container():
+@app.route('/trigger_jenkins_job', methods=['POST'])
+def trigger_jenkins_job():
     if not check_jenkins_server():
         return "Jenkins server is not reachable.", 500
     data = request.get_json()
     sanitized_data = sanitize_inputs(**data)
 
-    required_fields = ['auth_usr', 'auth_key', 'services']
-    if any(field not in sanitized_data for field in required_fields):
-        return "Invalid request data.", 400
+    required_fields = ['auth_usr', 'auth_key', 'services', 'job_type']
+    missing_fields = [field for field in required_fields if field not in sanitized_data]
+    if missing_fields:
+        message = f"Missing required fields: {', '.join(missing_fields)}"
+        response = make_response(message, 400)
+        return response
 
     auth_usr = sanitized_data['auth_usr']
     auth_key = sanitized_data['auth_key']
     services = sanitized_data['services']
+    job_type = sanitized_data['job_type']
 
-    url = "http://" + auth_usr + ":" + auth_key + "@" + jenkins_server + "/job/DeployContainer/buildWithParameters?services=" + services
+    if job_type == "deployContainer":
+        url_path = "/job/DeployContainer/buildWithParameters?services=" + services
+    elif job_type == "runTerraform":
+        url_path = "/job/terraform/job/terraform_" + services + "/buildWithParameters?COMMAND=apply -auto-approve --var-file=./vars/&VAR_FILE=production.tfvars"
+    else:
+        msg = "Invalid job type:" + job_type
+        response = make_response(msg, 400)
+        return response
+
+    url = "http://" + auth_usr + ":" + auth_key + "@" + jenkins_server + url_path
     app.logger.info(url.replace(auth_key, '<REDACTED>'))
     response = run_jenkins_job(url)
     return response
 
 
-@app.route('/poll_deploy_job_status', methods=['GET'])
-def poll_deploy_job_status():
+@app.route('/monitor_jenkins_job', methods=['GET'])
+def monitor_jenkins_job():
     data = request.get_json()
     sanitized_data = sanitize_inputs(**data)
 
-    required_fields = ['auth_usr', 'auth_key', 'services', 'job_id']
-    if any(field not in sanitized_data for field in required_fields):
-        return "Invalid request data.", 400
+    required_fields = ['auth_usr', 'auth_key', 'services', 'job_type', 'job_id']
+    missing_fields = [field for field in required_fields if field not in sanitized_data]
+    if missing_fields:
+        message = f"Missing required fields: {', '.join(missing_fields)}"
+        response = make_response(message, 400)
+        return response
 
     auth_usr = sanitized_data['auth_usr']
     auth_key = sanitized_data['auth_key']
     services = sanitized_data['services']
+    job_type = sanitized_data['job_type']
     job_id   = sanitized_data['job_id']
 
-    url              = "http://" + auth_usr + ":" + auth_key + "@" + jenkins_server + "/job/DeployContainer/" + job_id + "/api/json"
-    console_text_url = "http://" + auth_usr + ":" + auth_key + "@" + jenkins_server + "/job/DeployContainer/" + job_id + "/consoleText"
-    status = requests.get(url)
+    if job_type == "deployContainer":
+        url_path = "/job/DeployContainer/" + job_id
+    elif job_type == "runTerraform":
+        url_path = "/job/terraform/job/terraform_" + services + "/" + job_id
+    else:
+        msg = "Invalid job type:" + job_type
+        response = make_response(msg, 400)
+        return response
+
+    monitor_job_url = "http://" + auth_usr + ":" + auth_key + "@" + jenkins_server + url_path + "/api/json"
+    console_txt_url = "http://" + auth_usr + ":" + auth_key + "@" + jenkins_server + url_path + "/consoleText"
+
+    status = requests.get(monitor_job_url)
     inprogress = status.json()['inProgress']
     if inprogress is True:
         msg = "Job in progress"
         response = make_response(msg, 202)
         return response
     else:
-        response = requests.get(console_text_url)
-        flask_response = make_response(response.content)
-        flask_response.headers['Content-Type'] = response.headers['Content-Type']
-        return flask_response
-
-
-@app.route('/run_terraform', methods=['POST'])
-def run_terraform():
-    if not check_jenkins_server():
-        return "Jenkins server is not reachable.", 500
-    data = request.get_json()
-    sanitized_data = sanitize_inputs(**data)
-
-    required_fields = ['auth_usr', 'auth_key', 'services']
-    if any(field not in sanitized_data for field in required_fields):
-        return "Invalid request data.", 400
-
-    auth_usr = sanitized_data['auth_usr']
-    auth_key = sanitized_data['auth_key']
-    services = sanitized_data['services']
-
-    url = "http://" + auth_usr + ":" + auth_key + "@" + jenkins_server + "/job/terraform/job/terraform_" + services + "/buildWithParameters?COMMAND=apply -auto-approve --var-file=./vars/&VAR_FILE=production.tfvars"
-    app.logger.info(url.replace(auth_key, '<REDACTED>'))
-    response = run_jenkins_job(url)
-    return response
-
-
-@app.route('/poll_terraform_job_status', methods=['GET'])
-def poll_terraform_job_status():
-    data = request.get_json()
-    sanitized_data = sanitize_inputs(**data)
-
-    required_fields = ['auth_usr', 'auth_key', 'services', 'job_id']
-    if any(field not in sanitized_data for field in required_fields):
-        return "Invalid request data.", 400
-
-    auth_usr = sanitized_data['auth_usr']
-    auth_key = sanitized_data['auth_key']
-    services = sanitized_data['services']
-    job_id   = sanitized_data['job_id']
-
-    url              = "http://" + auth_usr + ":" + auth_key + "@" + jenkins_server + "/job/terraform/job/terraform_" + services + "/" + job_id + "/api/json"
-    console_text_url = "http://" + auth_usr + ":" + auth_key + "@" + jenkins_server + "/job/terraform/job/terraform_" + services + "/" + job_id + "/consoleText"
-    status = requests.get(url)
-    inprogress = status.json()['inProgress']
-    if inprogress is True:
-        msg = "Please wait, job still in progress..."
-        response = make_response(msg, 202)
-        return response
-    else:
-        response = requests.get(console_text_url)
+        response = requests.get(console_txt_url)
         flask_response = make_response(response.content)
         flask_response.headers['Content-Type'] = response.headers['Content-Type']
         return flask_response

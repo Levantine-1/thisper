@@ -1,5 +1,9 @@
 # https://medium.com/devops-techable/build-docker-image-with-github-actions-and-push-it-to-amazon-ecr-d4e739472284
 
+# Although this template is deployed in multiple repos, it is primarily maintained in the Thisper repository.
+# https://github.com/Levantine-1/thisper
+# And then it is copied to other github repositories as needed in the github actions workflow directory.
+
 name: Deploy to ECR
 
 on:
@@ -12,25 +16,24 @@ env:
   url: 'https://thisper.levantine.io'
 
 jobs:
-  run_terraform:
-    name: Apply Terraform Templates
-    runs-on: ubuntu-latest
-    steps:
-      - name: Check out code
-        uses: actions/checkout@v2
-
-      - name: Refresh Terraform
-        run: /bin/bash .github/scripts/run_jenkins_job.sh
-        env:
-          JENKINS_AUTH_KEY: ${{ secrets.JENKINS_AUTH_KEY }}
-          url: ${{ env.url }}
-          service_name: ${{ env.service_name }}
-          trigger_path: "run_terraform"
-          poll_path: "poll_terraform_job_status"
-
+#  run_terraform:
+#    name: Apply Terraform Templates
+#    runs-on: ubuntu-latest
+#    steps:
+#      - name: Check out code
+#        uses: actions/checkout@v2
+#
+#      - name: Refresh Terraform
+#        run: /bin/bash .github/scripts/run_jenkins_job.sh
+#        env:
+#          JENKINS_AUTH_KEY: ${{ secrets.JENKINS_AUTH_KEY }}
+#          url: ${{ env.url }}
+#          service_name: ${{ env.service_name }}
+#          job_type: "runTerraform"
+#
   build_and_push_container:
     name: Build and Push Container to ECR
-    needs: run_terraform
+#    needs: run_terraform
     runs-on: ubuntu-latest
     steps:
      - name: Check out code
@@ -56,19 +59,18 @@ jobs:
          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
 
-  deploy_container:
-    name: Pull and Deploy Container
-    runs-on: ubuntu-latest
-    needs: build_and_push_container
-    steps:
-      - name: Check out code
-        uses: actions/checkout@v2
-
-      - name: Deploy Container
-        run: /bin/bash .github/scripts/run_jenkins_job.sh
-        env:
-          JENKINS_AUTH_KEY: ${{ secrets.JENKINS_AUTH_KEY }}
-          url: ${{ env.url }}
-          service_name: ${{ env.service_name }}
-          trigger_path: "deploy_container"
-          poll_path: "poll_deploy_job_status"
+#  deploy_container:
+#    name: Pull and Deploy Container
+#    runs-on: ubuntu-latest
+#    needs: build_and_push_container
+#    steps:
+#      - name: Check out code
+#        uses: actions/checkout@v2
+#
+#      - name: Deploy Container
+#        run: /bin/bash .github/scripts/run_jenkins_job.sh
+#        env:
+#          JENKINS_AUTH_KEY: ${{ secrets.JENKINS_AUTH_KEY }}
+#          url: ${{ env.url }}
+#          service_name: ${{ env.service_name }}
+#          job_type: "deployContainer"
