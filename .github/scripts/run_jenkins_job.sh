@@ -51,8 +51,8 @@ poll_job_status(){
     current_time=$(date +%s)
     elapsed_time=$((current_time - start_time))
     if [[ $elapsed_time -ge $timeout ]]; then
-      echo "Timeout reached. Job didn't finish within the specified time."
       eval curl --request GET --location "${url}" --header "'"${header}"'" --data "'"${data}"'" --silent
+      echo "Timeout reached. Job didn't finish within the specified time."
       exit 1
     fi
     sleep 5
