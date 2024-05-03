@@ -21,7 +21,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
+        with:
+          repository: 'Levantine-1/thisper' # This is where the run_jenkins_job.sh script is located
 
       - name: Refresh Terraform
         run: /bin/bash .github/scripts/run_jenkins_job.sh
@@ -37,7 +39,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
      - name: Check out code
-       uses: actions/checkout@v2
+       uses: actions/checkout@v4
 
      - name: Configure AWS credentials
        uses: aws-actions/configure-aws-credentials@v1
@@ -49,6 +51,8 @@ jobs:
      - name: Login to Amazon ECR
        id: login-ecr
        uses: aws-actions/amazon-ecr-login@v1
+       with:
+         mask-outputs: true
 
      - name: Build, tag, and push image to Amazon ECR
        env:
@@ -65,7 +69,9 @@ jobs:
     needs: build_and_push_container
     steps:
       - name: Check out code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
+        with:
+          repository: 'Levantine-1/thisper' # This is where the run_jenkins_job.sh script is located
 
       - name: Deploy Container
         run: /bin/bash .github/scripts/run_jenkins_job.sh
