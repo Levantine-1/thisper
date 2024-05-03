@@ -30,7 +30,6 @@ poll_job_status(){
 
   url="${url}/${poll_path}"
   data="{\"auth_usr\": \"github\", \"auth_key\": \"${JENKINS_AUTH_KEY}\", \"service_name\": \"${service_name}\", \"job_id\": \"${job_id}\"}"
-  rc_params="-w \"%{http_code}\" -o /dev/null"
   header='Content-Type: application/json'
 
   while true; do
@@ -42,7 +41,7 @@ poll_job_status(){
       exit 1
     fi
 
-    rc=$(curl --request GET --location "${url}" --header "${header}" --data "${data}" "${rc_params}" --silent)
+    rc=$(curl --request GET --location "${url}" --header "${header}" --data "${data}" -w "%{http_code}" -o /dev/null --silent)
     if [[ $rc -eq 202 ]]; then
       echo "Job in progress, please wait ..."
     elif [[ $rc -eq 200 ]]; then
