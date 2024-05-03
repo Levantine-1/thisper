@@ -17,9 +17,9 @@
 # the python modules I needed. And I didn't want to install them in the github runner if I needed to.
 
 trigger_jenkins_job(){
-  data={\"auth_usr\": \"github\", \"auth_key\": \"${JENKINS_AUTH_KEY}\", \"service_name\": \"${service_name}\"}
+  data="{\"auth_usr\": \"github\", \"auth_key\": \"${JENKINS_AUTH_KEY}\", \"service_name\": \"${service_name}\"}"
   header='Content-Type: application/json'
-  job_id=$(curl --request POST --location "${url}/${trigger_path}" --header "${header}" --data "${data}" --silent)
+  job_id=$(curl --request POST --location "${url}/${trigger_path}" --header "${header}" --data ${data} --silent)
   echo "${job_id}" # Return the job ID
 }
 
@@ -29,7 +29,7 @@ poll_job_status(){
   start_time=$(date +%s)
 
   url="${url}/${poll_path}"
-  data={\"auth_usr\": \"github\", \"auth_key\": \"${JENKINS_AUTH_KEY}\", \"service_name\": \"${service_name}\", \"job_id\": \"${job_id}\"}
+  data="{\"auth_usr\": \"github\", \"auth_key\": \"${JENKINS_AUTH_KEY}\", \"service_name\": \"${service_name}\", \"job_id\": \"${job_id}\"}"
   header='Content-Type: application/json'
 
   while true; do
@@ -37,20 +37,20 @@ poll_job_status(){
     elapsed_time=$((current_time - start_time))
     if [[ $elapsed_time -ge $timeout ]]; then
       echo "Timeout reached. Job didn't finish within the specified time."
-      curl --request GET --location "${url}" --header "${header}" --data "${data}" --silent
+      curl --request GET --location "${url}" --header "${header}" --data ${data} --silent
       exit 1
     fi
 
-    rc=$(curl --request GET --location "${url}" --header "${header}" --data "${data}" -w "%{http_code}" -o /dev/null --silent)
+    rc=$(curl --request GET --location "${url}" --header "${header}" --data ${data} -w "%{http_code}" -o /dev/null --silent)
     if [[ $rc -eq 202 ]]; then
       echo "Job in progress, please wait ..."
     elif [[ $rc -eq 200 ]]; then
       echo "Job completed successfully, outputting logs ..."
-      curl --request GET --location "${url}" --header "${header}" --data "${data}" --silent
+      curl --request GET --location "${url}" --header "${header}" --data ${data} --silent
       break
     else
       echo "Job failed. Check Jenkins logs for more information."
-      curl --request GET --location "${url}" --header "${header}" --data "${data}" --silent
+      curl --request GET --location "${url}" --header "${header}" --data ${data} --silent
       exit 1
     fi
   done
