@@ -24,7 +24,7 @@ def check_jenkins_server():
 
 @app.route('/', methods=['GET'])
 def default_response():
-    response = "Hello and welcome! Please use the /build endpoint to trigger a Jenkins job."
+    response = "Hello and welcome! Please use the /build endpoint to trigger a Jenkins job. squik"
     return response
 
 
