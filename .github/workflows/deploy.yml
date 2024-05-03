@@ -20,7 +20,13 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Refresh Terraform
-        run: /bin/bash .github/scripts/run_jenkins_job.sh run_terraform poll_terraform_job_status
+        run: /bin/bash .github/scripts/run_jenkins_job.sh
+        env:
+          JENKINS_AUTH_KEY: ${{ secrets.JENKINS_AUTH_KEY }}
+          url: ${{ env.url }}
+          service_name: ${{ env.service_name }}
+          trigger_path: "run_terraform"
+          poll_path: "poll_terraform_job_status"
 
   build_and_push_container:
     name: Build and Push Docker Container to ECR
@@ -53,4 +59,10 @@ jobs:
     needs: build_and_push_container
     steps:
       - name: Deploy Container
-        run: /bin/bash .github/scripts/run_jenkins_job.sh deploy_container poll_deploy_job_status
+        run: /bin/bash .github/scripts/run_jenkins_job.sh
+        env:
+          JENKINS_AUTH_KEY: ${{ secrets.JENKINS_AUTH_KEY }}
+          url: ${{ env.url }}
+          service_name: ${{ env.service_name }}
+          trigger_path: "deploy_container"
+          poll_path: "poll_deploy_job_status"
