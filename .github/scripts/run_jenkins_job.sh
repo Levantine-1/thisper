@@ -19,7 +19,7 @@
 trigger_jenkins_job(){
   data="{\"auth_usr\": \"github\", \"auth_key\": \"${JENKINS_AUTH_KEY}\", \"service_name\": \"${service_name}\"}"
   header='Content-Type: application/json'
-  job_id=$(curl --request POST --location "${{ env.url }}/${trigger_path}" --header "${header}" --data "${data}" --silent)
+  job_id=$(curl --request POST --location "${url}/${trigger_path}" --header "${header}" --data "${data}" --silent)
   echo "${job_id}" # Return the job ID
 }
 
@@ -28,7 +28,7 @@ poll_job_status(){
   timeout=600  # Timeout in seconds (e.g., 10 minutes)
   start_time=$(date +%s)
 
-  url="${{ env.url }}/${poll_path}"
+  url="${url}/${poll_path}"
   data="{\"auth_usr\": \"github\", \"auth_key\": \"${JENKINS_AUTH_KEY}\", \"service_name\": \"${service_name}\", \"job_id\": \"${job_id}\"}"
   rc_params="-w \"%{http_code}\" -o /dev/null"
   header='Content-Type: application/json'
