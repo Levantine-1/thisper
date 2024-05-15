@@ -45,7 +45,9 @@ poll_job_status(){
       echo "Thisper did not respond. This could be because Thisper is restarting in the case of a deployment."
       echo "If this continues, please check the Thisper service."
     else
-      echo "Unknown error, server returned HTTP status code: ${rc} - Retrying ..."
+      echo "Unknown error, server returned HTTP status code: ${rc}"
+      eval curl --request GET --location "${url}" --header "'"${header}"'" --data "'"${data}"'" --silent
+      break
     fi
 
     current_time=$(date +%s)
