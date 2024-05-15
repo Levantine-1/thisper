@@ -175,8 +175,16 @@ def monitor_jenkins_job():
         response = make_response(msg, 202)
         return response
     else:
+        build_result = status.json()['result']
+        if build_result == "SUCCESS":
+            app.logger.info(job_type + "Build: " + job_id + " completed successfully")
+            return_code = 200
+        else:
+            app.logger.error(job_type + "Build: " + job_id + " failed")
+            return_code = 500
+
         response = requests.get(console_txt_url)
-        flask_response = make_response(response.content)
+        flask_response = make_response(response.content, return_code)
         flask_response.headers['Content-Type'] = response.headers['Content-Type']
         return flask_response
 
