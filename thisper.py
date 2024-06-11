@@ -24,7 +24,7 @@ def check_jenkins_server():
 
 @app.route('/', methods=['GET'])
 def default_response():
-    response = "Hello and welcome! Please use the /build endpoint to trigger a Jenkins job. squik"
+    response = "Hello! I am alive! Please check the documentation for the correct usage of thisper at: https://github.com/Levantine-1/thisper"
     return response
 
 
