@@ -104,19 +104,26 @@ def sanitize_inputs(**data):
     return sanitized_data
 
 
+def check_required_fields(request_data, required_fields):
+    missing_fields = [field for field in required_fields if field not in request_data]
+    if missing_fields:
+        message = f"Missing required fields: {', '.join(missing_fields)}"
+        return False, message
+    else:
+        return True, None
+
+
 @app.route('/trigger_jenkins_job', methods=['POST'])
 def trigger_jenkins_job():
     if not check_jenkins_server():
         return "Jenkins server is not reachable.", 500
-    data = request.get_json()
-    sanitized_data = sanitize_inputs(**data)
+    request_data = request.get_json()
+    sanitized_data = sanitize_inputs(**request_data)
 
     required_fields = ['auth_usr', 'auth_key', 'services', 'job_type']
-    missing_fields = [field for field in required_fields if field not in sanitized_data]
-    if missing_fields:
-        message = f"Missing required fields: {', '.join(missing_fields)}"
-        response = make_response(message, 400)
-        return response
+    checked_data_is_valid, message = check_required_fields(sanitized_data, required_fields)
+    if not checked_data_is_valid:
+        return make_response(message, 400)
 
     auth_usr = sanitized_data['auth_usr']
     auth_key = sanitized_data['auth_key']
@@ -144,11 +151,9 @@ def monitor_jenkins_job():
     sanitized_data = sanitize_inputs(**data)
 
     required_fields = ['auth_usr', 'auth_key', 'services', 'job_type', 'job_id']
-    missing_fields = [field for field in required_fields if field not in sanitized_data]
-    if missing_fields:
-        message = f"Missing required fields: {', '.join(missing_fields)}"
-        response = make_response(message, 400)
-        return response
+    check_data_is_valid, message = check_required_fields(sanitized_data, required_fields)
+    if not check_data_is_valid:
+        return make_response(message, 400)
 
     auth_usr = sanitized_data['auth_usr']
     auth_key = sanitized_data['auth_key']
