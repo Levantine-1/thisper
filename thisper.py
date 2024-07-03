@@ -75,6 +75,10 @@ def get_job_id(url):
                 job_id = lastest_job.json()['id']
                 app.logger.info("Jenkins job started. Build ID: " + job_id)
                 return job_id
+        except json.decoder.JSONDecodeError as e:
+            app.logger.error(e)
+            app.logger.error("Error, Jenkins job may not exist, please check the URL path in the deployment workflow. Check the string concatenation.")
+            break
         except Exception as e:
             app.logger.warning(e)
             app.logger.warning("An error occurred while trying to get the job id. Retrying...")
