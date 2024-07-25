@@ -47,8 +47,9 @@ def run_jenkins_job(url):
             response = make_response(msg, 500)
             return response
         response = make_response(job_id, 200)
-    except requests.exceptions.ConnectionError:
+    except requests.exceptions.ConnectionError as e:
         warning_msg = "Jenkins host may not have been configured correctly"
+        app.logger.warning(e)
         app.logger.warning(warning_msg)
         response = make_response(warning_msg, 500)
     except json.decoder.JSONDecodeError as e:
@@ -61,7 +62,7 @@ def run_jenkins_job(url):
 
 
 def get_job_id(url):
-    pattern = r'(.*?)/buildWithParameters.*'
+    pattern = r'(.*?)/build.*'
     job_url = re.sub(pattern, r'\1', url)
     lastest_build_url = job_url + "/lastBuild/api/json"
 
@@ -138,7 +139,10 @@ def trigger_jenkins_job():
     services = sanitized_data['services']
     job_type = sanitized_data['job_type']
 
-    if job_type == "deployContainer":
+    if job_type == "deployContainer" and services == "datagateway":
+        app.logger.info("Deploying datagateway")
+        url_path = "/job/deploy_datagateway/build"
+    elif job_type == "deployContainer":
         url_path = "/job/DeployContainer/buildWithParameters?services=" + services
     elif job_type == "runTerraform":
         url_path = "/job/terraform/job/terraform_" + services + "/buildWithParameters?COMMAND=apply -auto-approve --var-file=./vars/&VAR_FILE=production.tfvars"
@@ -169,7 +173,9 @@ def monitor_jenkins_job():
     job_type = sanitized_data['job_type']
     job_id   = sanitized_data['job_id']
 
-    if job_type == "deployContainer":
+    if job_type == "deployContainer" and services == "datagateway":
+        url_path = "/job/deploy_datagateway/" + job_id
+    elif job_type == "deployContainer":
         url_path = "/job/DeployContainer/" + job_id
     elif job_type == "runTerraform":
         url_path = "/job/terraform/job/terraform_" + services + "/" + job_id
@@ -202,31 +208,22 @@ def monitor_jenkins_job():
         return flask_response
 
 
-# def get_vault_secret(secret_path):
-#     response = hvault_client.secrets.kv.v2.read_secret_version(path=secret_path)
-#     print(response)
-#     return response
-
 @app.route('/analytics', methods=['POST'])
-def record_analytics():
+def record_analytics():  # Just forward the json data to the data gateway
     url = data_gateway_url + "/analytics"
+    incoming_data = request.get_json()
+    if incoming_data is None:
+        return make_response("No data received", 400)
 
-    payload = json.dumps({
-        "ipAddr": "192.168.1.1",
-        "timedate": "2023-10-01T14:30:00",
-        "request": "GET /api/data",
-        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
-    })
+    payload = json.dumps(incoming_data)
     headers = {
         'Authorization': data_gateway_token,
         'Content-Type': 'application/json'
     }
 
-    response = requests.request("POST", url, headers=headers, data=payload)
+    requests.request("POST", url, headers=headers, data=payload)
 
-    print(response.text)
-    return ""
-
+    return make_response("", 201)
 
 
 if __name__ == '__main__':  # These steps will only run if the app is started manually like "/bin/python thisper.py"
