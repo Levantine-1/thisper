@@ -1,4 +1,6 @@
 variable "data_gateway_get_api_key_url" {}
+variable "data_gateway_token_request_email" {}
+variable "data_gateway_token_vault_path" {}
 
 data "http" "get_api_key" {
   url = var.data_gateway_get_api_key_url
@@ -7,7 +9,7 @@ data "http" "get_api_key" {
     Content-Type = "application/json"
   }
   request_body = jsonencode({
-    "email": "thisper@levantine.io"
+    "email": var.data_gateway_token_request_email
   })
 }
 
@@ -16,7 +18,7 @@ locals {
 }
 
 resource "vault_generic_secret" "store_data_gateway_api_key" {
-  path = "kv/k8clusters/DataGatewayK8Cluster/thisperAPIKey"
+  path = var.data_gateway_token_vault_path
   data_json = <<EOT
 {
   "api_key": "${local.api_key}"
