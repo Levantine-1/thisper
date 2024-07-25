@@ -4,8 +4,12 @@ import requests
 import logging
 import re
 import time
+import os
 
-jenkins_server = "jenkins.internal.levantine.io"
+jenkins_server = os.getenv('JENKINS_SERVER')
+data_gateway_url = os.getenv('DATA_GATEWAY_URL')
+data_gateway_token = os.getenv('DATA_GATEWAY_TOKEN')
+
 app = Flask(__name__)
 
 
@@ -196,6 +200,33 @@ def monitor_jenkins_job():
         flask_response = make_response(response.content, return_code)
         flask_response.headers['Content-Type'] = response.headers['Content-Type']
         return flask_response
+
+
+# def get_vault_secret(secret_path):
+#     response = hvault_client.secrets.kv.v2.read_secret_version(path=secret_path)
+#     print(response)
+#     return response
+
+@app.route('/analytics', methods=['POST'])
+def record_analytics():
+    url = data_gateway_url + "/analytics"
+
+    payload = json.dumps({
+        "ipAddr": "192.168.1.1",
+        "timedate": "2023-10-01T14:30:00",
+        "request": "GET /api/data",
+        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+    })
+    headers = {
+        'Authorization': data_gateway_token,
+        'Content-Type': 'application/json'
+    }
+
+    response = requests.request("POST", url, headers=headers, data=payload)
+
+    print(response.text)
+    return ""
+
 
 
 if __name__ == '__main__':  # These steps will only run if the app is started manually like "/bin/python thisper.py"
