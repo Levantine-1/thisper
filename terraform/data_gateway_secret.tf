@@ -4,7 +4,7 @@ variable "data_gateway_token_vault_path" {}
 
 data "http" "get_api_key" {
   url = var.data_gateway_get_api_key_url
-  request_method = "POST"
+  method = "POST"
   request_headers = {
     Content-Type = "application/json"
   }
