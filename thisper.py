@@ -8,7 +8,7 @@ import os
 
 jenkins_server = os.getenv('JENKINS_SERVER')
 data_gateway_url = os.getenv('DATA_GATEWAY_URL')
-data_gateway_token = os.getenv('DATA_GATEWAY_TOKEN')
+data_gateway_token = os.getenv('DATA_GATEWAY_API_KEY')
 
 app = Flask(__name__)
 
