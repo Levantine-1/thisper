@@ -4,8 +4,12 @@ import requests
 import logging
 import re
 import time
+import os
 
-jenkins_server = "jenkins.internal.levantine.io"
+jenkins_server = os.getenv('JENKINS_SERVER')
+data_gateway_url = os.getenv('DATA_GATEWAY_URL')
+data_gateway_token = os.getenv('DATA_GATEWAY_API_KEY')
+
 app = Flask(__name__)
 
 
@@ -43,8 +47,9 @@ def run_jenkins_job(url):
             response = make_response(msg, 500)
             return response
         response = make_response(job_id, 200)
-    except requests.exceptions.ConnectionError:
+    except requests.exceptions.ConnectionError as e:
         warning_msg = "Jenkins host may not have been configured correctly"
+        app.logger.warning(e)
         app.logger.warning(warning_msg)
         response = make_response(warning_msg, 500)
     except json.decoder.JSONDecodeError as e:
@@ -57,7 +62,7 @@ def run_jenkins_job(url):
 
 
 def get_job_id(url):
-    pattern = r'(.*?)/buildWithParameters.*'
+    pattern = r'(.*?)/build.*'
     job_url = re.sub(pattern, r'\1', url)
     lastest_build_url = job_url + "/lastBuild/api/json"
 
@@ -134,7 +139,10 @@ def trigger_jenkins_job():
     services = sanitized_data['services']
     job_type = sanitized_data['job_type']
 
-    if job_type == "deployContainer":
+    if job_type == "deployContainer" and services == "datagateway":
+        app.logger.info("Deploying datagateway")
+        url_path = "/job/deploy_datagateway/build"
+    elif job_type == "deployContainer":
         url_path = "/job/DeployContainer/buildWithParameters?services=" + services
     elif job_type == "runTerraform":
         url_path = "/job/terraform/job/terraform_" + services + "/buildWithParameters?COMMAND=apply -auto-approve --var-file=./vars/&VAR_FILE=production.tfvars"
@@ -165,7 +173,9 @@ def monitor_jenkins_job():
     job_type = sanitized_data['job_type']
     job_id   = sanitized_data['job_id']
 
-    if job_type == "deployContainer":
+    if job_type == "deployContainer" and services == "datagateway":
+        url_path = "/job/deploy_datagateway/" + job_id
+    elif job_type == "deployContainer":
         url_path = "/job/DeployContainer/" + job_id
     elif job_type == "runTerraform":
         url_path = "/job/terraform/job/terraform_" + services + "/" + job_id
@@ -196,6 +206,24 @@ def monitor_jenkins_job():
         flask_response = make_response(response.content, return_code)
         flask_response.headers['Content-Type'] = response.headers['Content-Type']
         return flask_response
+
+
+@app.route('/analytics', methods=['POST'])
+def record_analytics():  # Just forward the json data to the data gateway
+    url = data_gateway_url + "/analytics"
+    incoming_data = request.get_json()
+    if incoming_data is None:
+        return make_response("No data received", 400)
+
+    payload = json.dumps(incoming_data)
+    headers = {
+        'Authorization': data_gateway_token,
+        'Content-Type': 'application/json'
+    }
+
+    requests.request("POST", url, headers=headers, data=payload)
+
+    return make_response("", 201)
 
 
 if __name__ == '__main__':  # These steps will only run if the app is started manually like "/bin/python thisper.py"
