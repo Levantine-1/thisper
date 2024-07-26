@@ -220,9 +220,7 @@ def record_analytics():  # Just forward the json data to the data gateway
         'Authorization': data_gateway_token,
         'Content-Type': 'application/json'
     }
-
     requests.request("POST", url, headers=headers, data=payload)
-
     return make_response("", 201)
 
 
