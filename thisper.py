@@ -223,7 +223,7 @@ def record_analytics():  # Just forward the json data to the data gateway
 
     response = requests.request("POST", url, headers=headers, data=payload)
     flask_response = make_response(response.content, response.status_code)
-    flask_response.headers['Content-Type'] = response.headers['Content-Type']
+    # flask_response.headers['Content-Type'] = response.headers['Content-Type'] # The upstream data gateway does not return a content-type header at this time.
     return flask_response
 
 
