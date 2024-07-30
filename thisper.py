@@ -220,8 +220,11 @@ def record_analytics():  # Just forward the json data to the data gateway
         'Authorization': data_gateway_token,
         'Content-Type': 'application/json'
     }
-    requests.request("POST", url, headers=headers, data=payload)
-    return make_response("", 201)
+
+    response = requests.request("POST", url, headers=headers, data=payload)
+    flask_response = make_response(response.content, response.status_code)
+    flask_response.headers['Content-Type'] = response.headers['Content-Type']
+    return flask_response
 
 
 if __name__ == '__main__':  # These steps will only run if the app is started manually like "/bin/python thisper.py"
