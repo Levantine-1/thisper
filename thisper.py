@@ -1,17 +1,21 @@
 import json
-from flask import Flask, request, make_response, jsonify
-import requests
 import logging
+import os
 import re
 import time
-import os
+from datetime import datetime
+
+import requests
+from flask import Flask, request, make_response
+from flask_cors import CORS
 
 jenkins_server = os.getenv('JENKINS_SERVER')
 data_gateway_url = os.getenv('DATA_GATEWAY_URL')
 data_gateway_token = os.getenv('DATA_GATEWAY_API_KEY')
 
 app = Flask(__name__)
-
+# CORS(app, resources={r"/*": {"origins": "http://levantine.io"}})
+CORS(app)
 
 def check_jenkins_server():
     try:
@@ -215,12 +219,15 @@ def record_analytics():  # Just forward the json data to the data gateway
     if incoming_data is None:
         return make_response("No data received", 400)
 
+    # Inject more data into the incoming data json
+    incoming_data['timedate'] = str(datetime.now().strftime('%Y%m%d.%H%M%S'))
+    incoming_data['ip_addr'] = str(request.remote_addr)
+
     payload = json.dumps(incoming_data)
     headers = {
         'Authorization': data_gateway_token,
         'Content-Type': 'application/json'
     }
-
     response = requests.request("POST", url, headers=headers, data=payload)
     flask_response = make_response(response.content, response.status_code)
     # flask_response.headers['Content-Type'] = response.headers['Content-Type'] # The upstream data gateway does not return a content-type header at this time.
