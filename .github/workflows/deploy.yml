@@ -16,26 +16,26 @@ env:
   url: 'https://thisper.levantine.io'
 
 jobs:
-#  run_terraform:
-#    name: Apply Terraform Templates
-#    runs-on: ubuntu-latest
-#    steps:
-#      - name: Check out code
-#        uses: actions/checkout@v4
-#        with:
-#          repository: 'Levantine-1/thisper' # This is where the run_jenkins_job.sh script is located
-#
-#      - name: Refresh Terraform
-#        run: /bin/bash .github/scripts/run_jenkins_job.sh
-#        env:
-#          JENKINS_AUTH_KEY: ${{ secrets.JENKINS_AUTH_KEY }}
-#          url: ${{ env.url }}
-#          service_name: ${{ env.service_name }}
-#          job_type: "runTerraform"
+  run_terraform:
+    name: Apply Terraform Templates
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+        with:
+          repository: 'Levantine-1/thisper' # This is where the run_jenkins_job.sh script is located
+
+      - name: Refresh Terraform
+        run: /bin/bash .github/scripts/run_jenkins_job.sh
+        env:
+          JENKINS_AUTH_KEY: ${{ secrets.JENKINS_AUTH_KEY }}
+          url: ${{ env.url }}
+          service_name: ${{ env.service_name }}
+          job_type: "runTerraform"
 
   build_and_push_container:
     name: Build and Push Container to ECR
-#    needs: run_terraform
+    needs: run_terraform
     runs-on: ubuntu-latest
     steps:
      - name: Check out code
@@ -61,20 +61,20 @@ jobs:
          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
 
-#  deploy_container:
-#    name: Pull and Deploy Container
-#    runs-on: ubuntu-latest
-#    needs: build_and_push_container
-#    steps:
-#      - name: Check out code
-#        uses: actions/checkout@v4
-#        with:
-#          repository: 'Levantine-1/thisper' # This is where the run_jenkins_job.sh script is located
-#
-#      - name: Deploy Container
-#        run: /bin/bash .github/scripts/run_jenkins_job.sh
-#        env:
-#          JENKINS_AUTH_KEY: ${{ secrets.JENKINS_AUTH_KEY }}
-#          url: ${{ env.url }}
-#          service_name: ${{ env.service_name }}
-#          job_type: "deployContainer"
+  deploy_container:
+    name: Pull and Deploy Container
+    runs-on: ubuntu-latest
+    needs: build_and_push_container
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+        with:
+          repository: 'Levantine-1/thisper' # This is where the run_jenkins_job.sh script is located
+
+      - name: Deploy Container
+        run: /bin/bash .github/scripts/run_jenkins_job.sh
+        env:
+          JENKINS_AUTH_KEY: ${{ secrets.JENKINS_AUTH_KEY }}
+          url: ${{ env.url }}
+          service_name: ${{ env.service_name }}
+          job_type: "deployContainer"
