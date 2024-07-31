@@ -221,7 +221,7 @@ def record_analytics():  # Just forward the json data to the data gateway
 
     # Inject more data into the incoming data json
     incoming_data['timedate'] = str(datetime.now().strftime('%Y%m%d.%H%M%S'))
-    incoming_data['ip_addr'] = str(request.remote_addr)
+    incoming_data['ip_addr'] = request.headers.get('X-Forwarded-For', request.remote_addr).split(',')[0].strip()
 
     payload = json.dumps(incoming_data)
     headers = {
