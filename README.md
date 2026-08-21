@@ -1,19 +1,19 @@
 # THISPER
 Telephone + Whisper = Thisper
 
-Thisper is a Python-flask based web application that serves as an interface to interact with Jenkins jobs. The application is designed to monitor and return the status of specific Jenkins jobs, such as deploying a container or running Terraform.
+Thisper started as a Python-flask bridge for triggering and monitoring Jenkins jobs from GitHub Actions, without exposing Jenkins itself to the internet. Jenkins has since been decommissioned — CI/CD now goes through a self-hosted GitHub Actions runner talking directly to Semaphore inside the homelab network, and that bridge code has been removed.
 
-I created this because I did not want to expose jenkins to the internet, and I didn't like how the API token is passed in at the URL level.
-
-This way the token can be stored in the message body, so it's protected by SSL encryption between GitHub actions and the Thisper service. Thisper and Jenkins exist on the same network, so it should be a bit safer.
+**Thisper is still needed, just for a different reason now.** It's the public-facing proxy in front of DataGateway's `/analytics` endpoint: `portfolio`'s pages call `https://thisper.levantine.io/analytics` directly from visitors' browsers on every page load and tracked link click. DataGateway itself only has an internal NodePort endpoint and needs a server-side API key to write to — neither of which a browser can talk to directly — so thisper is what makes that path public and keeps the key off the client.
 
 ## Functionality
 
-The application exposes a route that accepts a job type and job ID as parameters. The job type can be either `deployContainer` or `runTerraform`. The application then constructs a URL to the Jenkins job's API and makes a GET request to retrieve the job's status. If the job is in progress, it returns a message indicating so. If the job is not in progress, it retrieves and returns the console text of the job.
+- `POST /analytics` — forwards analytics events (page path, user agent, IP) from public browsers to DataGateway's `/analytics`, injecting the server-side API key.
+- `GET /.well-known/acme-challenge/<token>` — ACME HTTP-01 challenge responder for TLS cert issuance.
+- `GET /` — liveness/documentation response.
 
 ## Deployment
 
-The application is deployed using GitHub Actions, as defined in the `.github/workflows/deploy.yml` file. The deployment process involves applying Terraform templates, building and pushing a Docker container to Amazon ECR, and deploying the container.
+The application is deployed using GitHub Actions, as defined in the `.github/workflows/deploy.yml` file. The deployment process involves applying Terraform templates, building and pushing a Docker container to Amazon ECR, and triggering the deploy via Semaphore.
 
 ## Development
 
