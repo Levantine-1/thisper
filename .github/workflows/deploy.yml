@@ -39,6 +39,14 @@ jobs:
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
+        with:
+          # The wrapper script setup-terraform installs by default
+          # (to capture stdout/stderr as step outputs) shebangs to
+          # `/usr/bin/env node`, which needs a system-wide Node.js
+          # install. This self-hosted runner only has the runner's
+          # own bundled/private Node, not one on PATH. Nothing here
+          # reads terraform's step outputs, so just skip the wrapper.
+          terraform_wrapper: false
 
       - name: Terraform Init
         run: terraform init
