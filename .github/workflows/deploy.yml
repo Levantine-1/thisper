@@ -44,6 +44,16 @@ jobs:
         run: terraform init
         working-directory: terraform
 
+      # One-time bootstrap: this role was created manually (ad-hoc, via the
+      # terraform_admin AWS creds) to break the chicken-and-egg problem of
+      # the OIDC role needing to exist before this very job can authenticate
+      # to create it. State has no record of it yet, so import it before the
+      # first real apply -- ignore failure so re-runs after it's imported
+      # stay a no-op. Remove this step once confirmed imported.
+      - name: Import pre-existing IAM role (one-time bootstrap)
+        run: terraform import aws_iam_role.github_actions_thisper github_actions_thisper || true
+        working-directory: terraform
+
       - name: Terraform Apply
         run: terraform apply -auto-approve -var-file=vars/production.tfvars -var "vault_token=${VAULT_TOKEN}"
         working-directory: terraform
