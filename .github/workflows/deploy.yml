@@ -18,20 +18,37 @@ env:
 jobs:
   run_terraform:
     name: Apply Terraform Templates
-    runs-on: ubuntu-latest
+    # self-hosted, not ubuntu-latest: this repo's terraform still reaches
+    # Vault directly (for the delegate-zone record's credentials and the
+    # thisperAPIKey secret write) and calls the internal DataGateway
+    # NodePort endpoint -- neither is reachable from a GitHub-hosted
+    # runner, only from inside the homelab network.
+    runs-on: self-hosted
+    permissions:
+      id-token: write
+      contents: read
     steps:
       - name: Check out code
         uses: actions/checkout@v4
-        with:
-          repository: 'Levantine-1/thisper' # This is where the run_jenkins_job.sh script is located
 
-      - name: Refresh Terraform
-        run: /bin/bash .github/scripts/run_jenkins_job.sh
+      - name: Configure AWS credentials via OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::975050308029:role/github_actions_thisper
+          aws-region: us-west-2
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Terraform Init
+        run: terraform init
+        working-directory: terraform
+
+      - name: Terraform Apply
+        run: terraform apply -auto-approve -var-file=vars/production.tfvars -var "vault_token=${VAULT_TOKEN}"
+        working-directory: terraform
         env:
-          JENKINS_AUTH_KEY: ${{ secrets.JENKINS_AUTH_KEY }}
-          url: ${{ env.url }}
-          service_name: ${{ env.service_name }}
-          job_type: "runTerraform"
+          VAULT_TOKEN: ${{ secrets.VAULT_TOKEN }}
 
   build_and_push_container:
     name: Build and Push Container to ECR
@@ -62,19 +79,61 @@ jobs:
          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
 
   deploy_container:
-    name: Pull and Deploy Container
-    runs-on: ubuntu-latest
+    name: Trigger Deploy via Semaphore
+    # self-hosted, not ubuntu-latest: Semaphore is only reachable from
+    # inside the homelab network. No more relaying through thisper ->
+    # Jenkins (Jenkins decommissioned) -- the runner already lives inside
+    # the network, so it calls Semaphore's API directly.
+    runs-on: self-hosted
     needs: build_and_push_container
     steps:
-      - name: Check out code
-        uses: actions/checkout@v4
-        with:
-          repository: 'Levantine-1/thisper' # This is where the run_jenkins_job.sh script is located
-
-      - name: Deploy Container
-        run: /bin/bash .github/scripts/run_jenkins_job.sh
+      - name: Trigger "Deploy Container" Semaphore template
         env:
-          JENKINS_AUTH_KEY: ${{ secrets.JENKINS_AUTH_KEY }}
-          url: ${{ env.url }}
-          service_name: ${{ env.service_name }}
-          job_type: "deployContainer"
+          SEMAPHORE_URL: http://service.internal.levantine.io:3000
+          SEMAPHORE_API_TOKEN: ${{ secrets.SEMAPHORE_API_TOKEN }}
+          CONTAINER_NAME: ${{ env.service_name }}
+        run: |
+          python3 - <<'PYEOF'
+          import json, os, sys, time, urllib.request
+
+          url = os.environ["SEMAPHORE_URL"]
+          token = os.environ["SEMAPHORE_API_TOKEN"]
+          container_name = os.environ["CONTAINER_NAME"]
+          headers = {"Authorization": f"Bearer {token}"}
+
+          def get(path):
+              req = urllib.request.Request(f"{url}{path}", headers=headers)
+              return json.load(urllib.request.urlopen(req))
+
+          # Resolved by name, not hardcoded IDs -- bootstrap_templates.py
+          # never persists the project/template IDs it creates anywhere
+          # durable.
+          project_id = next(p["id"] for p in get("/api/projects") if p["name"] == "Homelab Ops")
+          template_id = next(t["id"] for t in get(f"/api/project/{project_id}/templates") if t["name"] == "Deploy Container")
+
+          body = json.dumps({
+              "template_id": template_id,
+              "environment": json.dumps({"container_name": container_name}),
+          }).encode()
+          req = urllib.request.Request(
+              f"{url}/api/project/{project_id}/tasks",
+              data=body,
+              headers={**headers, "Content-Type": "application/json"},
+              method="POST",
+          )
+          task_id = json.load(urllib.request.urlopen(req))["id"]
+          print(f"Triggered Semaphore task {task_id} for template {template_id} (container_name={container_name})")
+
+          for _ in range(60):
+              status = get(f"/api/project/{project_id}/tasks/{task_id}")["status"]
+              print(f"Status: {status}")
+              if status == "success":
+                  sys.exit(0)
+              if status in ("error", "stopped"):
+                  print("Semaphore task failed")
+                  sys.exit(1)
+              time.sleep(10)
+
+          print("Timed out waiting for Semaphore task to finish")
+          sys.exit(1)
+          PYEOF
