@@ -62,11 +62,14 @@ jobs:
       # confirmed imported.
       - name: Import pre-existing resources (one-time bootstrap)
         run: |
-          terraform import aws_iam_role.github_actions_thisper github_actions_thisper || true
-          terraform import aws_ecr_repository.thisper_ecr_repo thisper || true
-          terraform import aws_route53_record.configure_bastion_r53_record_levantine_io Z0310531H43ZOQJC2RVV_thisper.prod.levantine.io_A || true
-          terraform import aws_route53_record.configure_delegate_record Z32CDTOFAQVLJJ_thisper.levantine.io_A || true
+          IMPORT_ARGS="-var-file=vars/production.tfvars -var vault_token=${VAULT_TOKEN}"
+          terraform import $IMPORT_ARGS aws_iam_role.github_actions_thisper github_actions_thisper || true
+          terraform import $IMPORT_ARGS aws_ecr_repository.thisper_ecr_repo thisper || true
+          terraform import $IMPORT_ARGS aws_route53_record.configure_bastion_r53_record_levantine_io Z0310531H43ZOQJC2RVV_thisper.prod.levantine.io_A || true
+          terraform import $IMPORT_ARGS aws_route53_record.configure_delegate_record Z32CDTOFAQVLJJ_thisper.levantine.io_A || true
         working-directory: terraform
+        env:
+          VAULT_TOKEN: ${{ secrets.VAULT_TOKEN }}
 
       - name: Terraform Apply
         run: terraform apply -auto-approve -var-file=vars/production.tfvars -var "vault_token=${VAULT_TOKEN}"
