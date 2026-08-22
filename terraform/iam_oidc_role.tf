@@ -29,9 +29,26 @@ data "aws_iam_policy_document" "github_actions_assume_role" {
     # Scoped to pushes to master specifically (this repo's actual default
     # branch), not a bare repo:* wildcard.
     condition {
-      test     = "StringEquals"
+      # Two values because GitHub is migrating the `sub` claim to an
+      # "immutable" form that embeds numeric owner and repo IDs, e.g.
+      #   repo:Levantine-1@71067517/thisper@1342417979:ref:refs/heads/master
+      # instead of the classic
+      #   repo:Levantine-1/thisper:ref:refs/heads/master
+      # A StringEquals against only the classic form silently stops
+      # matching once a repo is switched over, and it surfaces as a flat
+      # "Not authorized to perform sts:AssumeRoleWithWebIdentity" with no
+      # hint that the claim shape is what changed. Found live on livecam;
+      # every repo in this account shares the pattern, so all were fixed
+      # together rather than one failed deploy at a time.
+      #
+      # Still pinned to this exact owner and repo -- the wildcards cover
+      # only the numeric IDs, anchored after "Levantine-1@" and "/thisper@".
+      test     = "StringLike"
       variable = "token.actions.githubusercontent.com:sub"
-      values   = ["repo:Levantine-1/thisper:ref:refs/heads/master"]
+      values = [
+        "repo:Levantine-1/thisper:ref:refs/heads/master",
+        "repo:Levantine-1@*/thisper@*:ref:refs/heads/master",
+      ]
     }
   }
 }
